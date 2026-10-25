@@ -1432,7 +1432,7 @@ $app.addEventListener('keydown', ev => {
   if (t.id === 'caixa1' || t.id === 'aporte1' || t.id === 'cxval' || t.id === 'cxdesc' || t.dataset.additem || t.dataset.addhave || t.dataset.ficha || t.dataset.porc || t.dataset.pname || t.classList.contains('who')) { ev.preventDefault(); t.blur(); }
 });
 // ---- Versão do app (troque a cada publicação) e "puxar para atualizar" ----
-const APP_VERSION = '6.0';
+const APP_VERSION = '6.0.1';
 async function refreshNow() {
   try {
     const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
