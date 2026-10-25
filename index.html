@@ -208,7 +208,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: (() => { try { return localStorage.getItem('pp_conta') ? 'entrar' : 'criar'; } catch (e) { return 'entrar'; } })(), projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.3';
+const APP_VERSION = '8.4';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -369,13 +369,13 @@ function viewGarage() {
   return `
   <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP<b>.PRO</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
-  ${S.projects.length ? cards : `
-    <div class="card hot">
-      <h2>Comece pelo Caminhãozinho</h2>
-      <p class="small mut">Cria o projeto da S10 4.3 V6 1998 já preenchido. Você só confere o diagnóstico.</p>
-      <button class="btn" id="preset">CRIAR O CAMINHÃOZINHO</button>
+  ${S.projects.length ? cards + '<button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>' : `
+    <div class="card hot" style="gap:10px">
+      <h2 style="margin:0">${S.perfil && S.perfil.nome ? 'Bem-vindo, ' + esc(S.perfil.nome.split(' ')[0]) + '!' : 'Bem-vindo!'}</h2>
+      <p class="small mut" style="margin:0;line-height:1.45">Todo carro preparado começa com um sonho. Conte qual é o seu e o Prep.pro monta o plano com <b style="color:var(--fg)">As 5 Marchas</b>: o que você quer, o que já tem, o que precisa, quem faz e a execução.</p>
+      <p class="tiny mut" style="margin:0">Ainda não tem o carro? Sem problema: dá para planejar o sonho antes de comprar.</p>
+      <button class="btn" id="novo">COMEÇAR MEU PROJETO</button>
     </div>`}
-  <button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>
   ${cuponsCard()}
   ${S.projects.length ? bannerCard(bannerFor('garagem')) : ''}`;
 }
@@ -422,7 +422,7 @@ function viewWizard() {
     <div style="flex:1" class="col"><div class="row between small mut" style="gap:0"><span>${n}ª marcha · ${MARCHAS[n - 1]}</span><span>${n} de 5</span></div>${segs(n)}</div></div>`;
   if (n === 1) return `${head}
     <h1>Qual é o sonho?</h1>
-    <label class="f">Nome do projeto<input id="pnome" value="${esc(d.nome)}" placeholder="Ex.: Caminhãozinho"></label>
+    <label class="f">Nome do projeto<input id="pnome" value="${esc(d.nome)}" placeholder="Ex.: Gol turbo, Opala do vô, Meu projeto"></label>
     <div class="grid2">${GOALS.map(g => `<button class="opt ${d.objetivo === g[0] ? 'on' : ''}" data-goal="${g[0]}"><b>${g[1]}</b><span>${g[2]}</span></button>`).join('')}</div>
     <label class="f">Quanto pretende investir no total? (R$)<input id="porc" inputmode="decimal" value="${esc(fmtIn(d.orc))}" placeholder="Ex.: 25.000"></label>
     <div class="col"><b>Em quanto tempo?</b><div class="chips">${PRAZOS.map((b, i) => `<button class="chip ${d.prazo === i ? 'on' : ''}" data-praz="${i}">${b}</button>`).join('')}</div></div>
