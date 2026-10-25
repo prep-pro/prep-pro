@@ -199,7 +199,8 @@ const CHECKS = {
 const TPL_OF = { rua: 'forca', arrancada: 'forca', track: 'forca', offroad: 'offroad', visual: 'visual', restauro: 'visual' };
 const checksFor = goal => CHECKS[TPL_OF[goal] || 'forca'];
 const CHECK_OPTS = [['ok', 'OK'], ['verificar', 'Revisar'], ['nao_sei', 'Não sei']];
-const BRANDS = ['Chevrolet', 'Volkswagen', 'Fiat', 'Ford'];
+const BRANDS_PRI = ['Chevrolet', 'Volkswagen', 'Fiat', 'Ford'];
+function brands() { const s = [...new Set(S.cars.map(c => c.marca))]; return BRANDS_PRI.filter(b => s.includes(b)).concat(s.filter(b => !BRANDS_PRI.includes(b)).sort((a, b) => a.localeCompare(b))); }
 const HAS_OPTS = [['', 'Preciso'], ['guardado', 'Guardado'], ['no_carro', 'No carro']];
 const ST_LABEL = { lista: 'Na lista', comprado: 'Comprado', instalado: 'Instalado' };
 const ST_NEXT = { lista: 'comprado', comprado: 'instalado', instalado: 'lista' };
@@ -208,7 +209,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: (() => { try { return localStorage.getItem('pp_conta') ? 'entrar' : 'criar'; } catch (e) { return 'entrar'; } })(), projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.4';
+const APP_VERSION = '8.6';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -407,12 +408,13 @@ function carListHtml(selId) {
       <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><b>${esc(carName(c))}</b><span>${esc(c.nota || '')}</span></div>
       <div style="text-align:right;flex:none"><b>${c.potencia_cv ? fmtNum(c.potencia_cv) + ' cv' : ''}</b><span style="display:block">${c.ano_ref ? 'ficha ' + c.ano_ref : ''}</span></div>
     </button>`).join('')
+    + (q && !list.length ? `<div class="card" style="background:var(--card2);gap:6px;margin:4px 0"><b>Não achamos "${esc(S.pick.q.trim())}" na lista</b><span class="small mut">Sem problema: use assim mesmo. Vamos incluir esse carro no catálogo.</span><button class="btn sm" data-pickfree="1">Usar "${esc(S.pick.q.trim())}" como meu carro</button></div>` : '')
     + `<button class="carrow ${selId === null && S.view === 'wizard' && S.draft?.carOutro ? 'on' : ''}" data-pickcar=""><div><b>Outro / não está na lista</b><span style="display:block">Descreva nos detalhes</span></div></button>`;
 }
 function carPicker(selId) {
   return `<div class="col">
-    <div class="chips">${['', ...BRANDS].map(b => `<button class="chip xs ${S.pick.brand === b ? 'on' : ''}" data-pickbrand="${b}">${b || 'Todas'}</button>`).join('')}</div>
-    <input id="carsearch" placeholder="Buscar: AP, Opala, turbo, V8…" value="${esc(S.pick.q)}" autocomplete="off">
+    <div class="chips" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">${['', ...brands()].map(b => `<button class="chip xs ${S.pick.brand === b ? 'on' : ''}" data-pickbrand="${b}">${b || 'Todas'}</button>`).join('')}</div>
+    <input id="carsearch" placeholder="Buscar: RAM, Hilux, AP, turbo, V8…" value="${esc(S.pick.q)}" autocomplete="off">
     <div class="carlist" id="carlist">${carListHtml(selId)}</div>
   </div>`;
 }
@@ -424,7 +426,8 @@ function viewWizard() {
     <h1>Qual é o sonho?</h1>
     <label class="f">Nome do projeto<input id="pnome" value="${esc(d.nome)}" placeholder="Ex.: Gol turbo, Opala do vô, Meu projeto"></label>
     <div class="grid2">${GOALS.map(g => `<button class="opt ${d.objetivo === g[0] ? 'on' : ''}" data-goal="${g[0]}"><b>${g[1]}</b><span>${g[2]}</span></button>`).join('')}</div>
-    <label class="f">Quanto pretende investir no total? (R$)<input id="porc" inputmode="decimal" value="${esc(fmtIn(d.orc))}" placeholder="Ex.: 25.000"></label>
+    <label class="f"><span>Quanto pretende investir? <span class="mut" style="font-weight:500">(opcional)</span></span><input id="porc" inputmode="decimal" value="${esc(fmtIn(d.orc))}" placeholder="Ex.: 30.000"></label>
+    <span class="tiny mut" style="margin-top:-6px">Ainda não sabe? Deixe em branco. Dá para definir depois, na 1ª marcha.</span>
     <div class="col"><b>Em quanto tempo?</b><div class="chips">${PRAZOS.map((b, i) => `<button class="chip ${d.prazo === i ? 'on' : ''}" data-praz="${i}">${b}</button>`).join('')}</div></div>
     <button class="btn" id="w1" ${d.objetivo ? '' : 'disabled'}>ENGATAR A 2ª MARCHA</button>`;
   return `${head}
@@ -575,7 +578,7 @@ function viewProject() {
 function phaseHead() {
   const n = S.phase, f = progress()[n - 1];
   const hint = ['Defina o sonho, o orçamento total e o prazo.', 'Conheça o ponto de partida antes de gastar.', 'Monte o plano: itens de cada stage e quanto prevê gastar.', 'Escolha quem faz cada stage, ou se é você mesmo.', 'Marque o que comprou e instalou e lance o que pagou.', 'Teste, regule e ajuste. Depois, o próximo stage volta para a 3ª.'][n - 1];
-  return `<div class="row between"><h2>${n === 6 ? 'Acerto fino' : n + 'ª marcha · ' + MARCHAS[n - 1]}</h2><span class="small" style="color:${f >= 0.999 ? 'var(--ok2)' : 'var(--mut)'}">${Math.round(f * 100)}%</span></div><p class="small mut">${hint}</p>`;
+  return `<div class="row between" id="fasetopo" style="scroll-margin-top:12px"><h2>${n === 6 ? 'Acerto fino' : n + 'ª marcha · ' + MARCHAS[n - 1]}</h2><span class="small" style="color:${f >= 0.999 ? 'var(--ok2)' : 'var(--mut)'}">${Math.round(f * 100)}%</span></div><p class="small mut">${hint}</p>`;
 }
 function viewPhase() {
   const n = S.phase, P = S.P, p = P.p;
@@ -585,7 +588,7 @@ function viewPhase() {
       <label class="f">Nome do projeto<input id="pname" value="${esc(p.nome)}" data-pname="${p.id}"></label>
       <b>Objetivo</b>
       <div class="chips">${GOALS.map(g => `<button class="chip xs ${p.objetivo === g[0] ? 'on' : ''}" data-pgoal="${g[0]}">${g[1]}</button>`).join('')}</div>
-      <label class="f">Orçamento total deste projeto (R$)<input id="porc1" inputmode="decimal" placeholder="Ex.: 40.000" data-porc="${p.id}" value="${esc(fmtIn(p.orcamento_total))}"></label>
+      <label class="f">Orçamento total deste projeto (R$)<input id="porc1" inputmode="decimal" placeholder="Ex.: 30.000" data-porc="${p.id}" value="${esc(fmtIn(p.orcamento_total))}"></label>
       <div class="money2">
         <label class="f">Guardado hoje (R$)<input id="caixa1" inputmode="decimal" placeholder="Ex.: 5.000" value="${p.caixa_desde ? esc(fmtIn(caixaCalc().saldo)) : ''}"></label>
         <label class="f">Guardo por mês (R$)<input id="aporte1" inputmode="decimal" placeholder="Ex.: 1.500" value="${esc(fmtIn(p.aporte_mensal))}"></label>
@@ -593,7 +596,7 @@ function viewPhase() {
       <span class="tiny mut">Viram a Caixinha do projeto, na aba Gastos: ela mostra quando cada stage fica pago.</span>
       <b>Prazo</b>
       <div class="chips">${PRAZOS.map(b => `<button class="chip xs ${p.prazo === b ? 'on' : ''}" data-pprazo="${esc(b)}">${b}</button>`).join('')}</div>
-      <button class="btn" id="save1">SALVAR</button>
+      <button class="btn" id="save1">SALVAR E IR PARA A 2ª MARCHA</button>
     </div>
     <div class="row" style="justify-content:center"><button class="link" id="delproj" style="color:var(--bad);font-weight:500;font-size:13px">Excluir projeto</button></div>`;
   } else if (n === 2) {
@@ -865,9 +868,14 @@ async function saveFase1() {
   const p = S.P.p, pid = p.id, nome = (document.getElementById('pname')?.value || '').trim();
   const v = parseMoney(document.getElementById('porc1')?.value);
   const patch = Object.assign(nome ? { nome } : {}, { orcamento_total: v, orcamento: v ? brl(v) : null }, caixaPatch());
+  const btn = document.getElementById('save1'); if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
   const ok = await saveProjById(pid, patch);
-  if (ok) { render(); syncMarcha(); toast('Salvo ✓'); }
+  if (!ok) { if (btn) { btn.disabled = false; btn.textContent = 'SALVAR E IR PARA A 2ª MARCHA'; } return; }
+  S.phase = 2; render(); syncMarcha(); irParaFase();
+  toast('1ª marcha salva ✓ Agora: o que você tem.');
 }
+// Leva a tela até o título da marcha aberta (logo abaixo do câmbio)
+function irParaFase() { requestAnimationFrame(() => { const el = document.getElementById('fasetopo'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); else window.scrollTo({ top: 0, behavior: 'smooth' }); }); }
 // "Guardado hoje" só reinicia a caixinha se o valor mudou; "por mês" é a meta de aporte
 function caixaPatch() {
   const p = S.P.p, patch = {};
@@ -961,8 +969,10 @@ async function saveFichaAll() {
     f[k] = ['ano', 'km', 'cv_hoje'].includes(k) ? (raw ? (parseInt(raw.replace(/\D/g, ''), 10) || null) : null) : (raw || null);
   });
   p.ficha = f;
+  const btn = document.getElementById('saveficha'); if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
   const ok = await saveProjById(p.id, { ficha: f });
-  if (ok) { render(); syncMarcha(); toast('Ficha salva ✓'); }
+  if (ok) { render(); syncMarcha(); toast('Ficha salva ✓ Agora confira se a base aguenta o sonho.'); }
+  else if (btn) { btn.disabled = false; btn.textContent = 'SALVAR FICHA'; }
 }
 function viewModal() {
   const m = S.modal; if (!m) return '';
@@ -1201,7 +1211,8 @@ function viewAdmin() {
     const c = S.clicks || { links: {}, banners: {} };
     const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
     const bn = (S.banners || []).map(b => ({ nome: b.parceiro + ' · ' + b.titulo, n: c.banners[b.id] || 0 })).sort((a, b) => b.n - a.n);
-    body = `<div class="kpis"><div class="kpi"><span>Cliques em ofertas</span><b>${lk.reduce((a, x) => a + x.n, 0)}</b></div><div class="kpi"><span>Cliques em banners</span><b>${bn.reduce((a, x) => a + x.n, 0)}</b></div></div>
+    const pedidos = S.carPedidos || [];
+    body = `${pedidos.length ? `<div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Carros pedidos (não estão na lista)</b>${pedidos.map(x => `<div class="item"><span class="nm">${esc(x.texto)}</span><b>${x.n}</b></div>`).join('')}</div>` : ''}<div class="kpis"><div class="kpi"><span>Cliques em ofertas</span><b>${lk.reduce((a, x) => a + x.n, 0)}</b></div><div class="kpi"><span>Cliques em banners</span><b>${bn.reduce((a, x) => a + x.n, 0)}</b></div></div>
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Ofertas</b>${lk.map(x => `<div class="item"><span class="nm">${esc(x.nome)}<br><span class="tiny mut">${esc(x.por)}</span></span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem ofertas.</p>'}</div>
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
@@ -1216,6 +1227,9 @@ async function loadClicks() {
   (l.data || []).forEach(r => links[r.product_link_id] = (links[r.product_link_id] || 0) + 1);
   (b.data || []).forEach(r => banners[r.banner_id] = (banners[r.banner_id] || 0) + 1);
   S.clicks = { links, banners };
+  const { data: cs } = await sb.from('car_sugestoes').select('texto');
+  const m = {}; (cs || []).forEach(r => { const k = r.texto.trim().toLowerCase(); m[k] = m[k] || { texto: r.texto.trim(), n: 0 }; m[k].n++; });
+  S.carPedidos = Object.values(m).sort((a, b) => b.n - a.n);
 }
 function openOfferForm(id) {
   const o = id === 'new' ? null : (S.offers || []).find(x => x.id === id);
@@ -1826,6 +1840,13 @@ $app.addEventListener('click', async ev => {
   if (id === 'w1') { keepWiz(); S.step = 2; return render(); }
   if (ds.have !== undefined) { keepWiz(); S.draft.tem_carro = ds.have === '1'; return render(); }
   if (ds.pickbrand !== undefined) { keepWiz(); S.pick.brand = ds.pickbrand; return render(); }
+  if (ds.pickfree) {
+    const txt = (S.pick.q || '').trim(); if (!txt) return;
+    sb.from('car_sugestoes').insert({ texto: txt, user_id: S.user.id }).then(() => {});
+    if (S.view === 'wizard') { keepWiz(); S.draft.car_model_id = null; S.draft.carOutro = true; S.draft.detalhe = txt; S.pick.q = ''; render(); return toast('Anotado: ' + txt + ' ✓'); }
+    S.P.p.car_models = null; S.pickOpen = false; S.P.p.ficha = Object.assign({}, S.P.p.ficha || {}, { obs: txt });
+    await saveProj({ car_model_id: null, ficha: S.P.p.ficha }); S.pick.q = ''; render(); toast('Anotado: ' + txt + ' ✓'); return syncMarcha();
+  }
   if (ds.pickcar !== undefined) {
     const cid = ds.pickcar || null;
     if (S.view === 'wizard') { keepWiz(); S.draft.car_model_id = cid; S.draft.carOutro = !cid; return render(); }
@@ -1839,7 +1860,7 @@ $app.addEventListener('click', async ev => {
   if (ds.fichachip) { const [k, v] = ds.fichachip.split('|'); await saveFicha(k, S.P.p.ficha?.[k] === v ? null : v); return render(); }
   if (id === 'w2') { keepWiz(); return createProject(); }
   if (id === 'pback') return loadGarage();
-  if (ds.phase) { S.phase = +ds.phase; S.tab = 'marchas'; return render(); }
+  if (ds.phase) { S.phase = +ds.phase; S.tab = 'marchas'; render(); return irParaFase(); }
   if (ds.goto) { S.phase = +ds.goto; S.tab = 'marchas'; return render(); }
   if (ds.tab) { S.tab = ds.tab; render(); if (ds.tab === 'diario') loadDiary(); return; }
   if (ds.gview) { S.gview = ds.gview; return render(); }
