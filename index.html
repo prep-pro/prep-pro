@@ -189,7 +189,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '6.0.2';
+const APP_VERSION = '6.1';
 const $app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -1159,6 +1159,14 @@ function openOfferForm(id) {
 function viewOfferForm() {
   const f = S.af;
   return `<div class="row"><button class="icon-btn" data-atab="ofertas" aria-label="Voltar">${back}</button><h1 style="font-size:28px">${f.id ? 'Editar oferta' : 'Nova oferta'}</h1></div>
+  <div class="card" style="gap:10px;border-color:#5A3520">
+    <b>Cole o link de afiliado</b>
+    <span class="small mut" style="margin-top:-4px">Eu busco nome, foto e preço na loja. Você só confere.</span>
+    <input id="aflink" value="${esc(f.link || '')}" placeholder="https://mercadolivre.com/sec/…" inputmode="url" autocomplete="off">
+    <button class="btn sm" id="afbuscar" ${f.buscando ? 'disabled' : ''}>${f.buscando ? 'Buscando na loja…' : 'Buscar dados do produto'}</button>
+    ${f.aviso ? `<span class="small" style="color:var(--warn)">${esc(f.aviso)}</span>` : ''}
+  </div>
+  ${f.img ? `<div class="row" style="gap:12px;align-items:center"><img src="${esc(f.img)}" alt="" style="width:84px;height:84px;object-fit:cover;border-radius:12px;background:var(--card2);flex:none"><span class="small mut">Foto encontrada. Confira o nome e o preço abaixo.</span></div>` : ''}
   <label class="f">Produto<input id="afnome" value="${esc(f.nome)}" placeholder="Ex.: Turbina ZR .70 Black"></label>
   <label class="f">Aparece no item do plano<select id="afitem"><option value="">— nenhum (usar palavras-chave) —</option>${(S.adminTpl || []).map(s => `<optgroup label="${esc(s.nome)}">${(s.template_items || []).sort((a, b) => a.ordem - b.ordem).map(t => `<option value="${t.id}" ${f.item === t.id ? 'selected' : ''}>${esc(t.nome)}</option>`).join('')}</optgroup>`).join('')}</select></label>
   <label class="f">Palavras-chave (para itens que o usuário criou)<input id="afpal" value="${esc(f.palavras)}" placeholder="Ex.: turbina, turbo, coletor"></label>
@@ -1173,6 +1181,38 @@ function viewOfferForm() {
   <label class="row" style="gap:10px"><input id="afativo" type="checkbox" ${f.ativo ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc)"> Oferta ativa</label>
   <button class="btn" id="afsave">SALVAR OFERTA</button>
   ${f.id ? `<button class="btn danger ${armed('afdel') ? 'armed' : ''}" id="afdel">${armed('afdel') ? 'Toque de novo para excluir' : 'Excluir oferta'}</button>` : ''}`;
+}
+function keepAf() {
+  const g = id => document.getElementById(id), f = S.af; if (!f || !g('afnome')) return;
+  f.link = g('aflink').value.trim(); f.nome = g('afnome').value; f.item = g('afitem').value; f.palavras = g('afpal').value; f.car = g('afcar').value; f.img = g('afimg').value.trim(); f.ativo = g('afativo').checked;
+  f.links = [0, 1, 2].map(i => ({ loja: g('afloja' + i).value, url: g('afurl' + i).value.trim(), preco: parseMoney(g('afpreco' + i).value) }));
+}
+function sugerirItem(nome) {
+  const n = (nome || '').toLowerCase(); let best = null, score = 0;
+  for (const s of S.adminTpl || []) for (const t of s.template_items || []) {
+    const ws = t.nome.toLowerCase().split(/[^a-zà-ú0-9]+/).filter(w => w.length > 3);
+    const sc = ws.filter(w => n.includes(w.slice(0, Math.max(4, w.length - 2)))).length;
+    if (sc > score) { score = sc; best = t.id; }
+  }
+  return best;
+}
+async function buscarLink() {
+  keepAf(); const f = S.af;
+  if (!/^https?:\/\//i.test(f.link)) { f.aviso = 'Cole um link começando com https://'; return render(); }
+  f.buscando = true; f.aviso = ''; render();
+  let r = null;
+  try { const { data, error } = await sb.functions.invoke('ler-link', { body: { url: f.link } }); if (error) throw error; r = data; }
+  catch (e) { r = { erro: 'Não consegui falar com o servidor agora.' }; }
+  f.buscando = false;
+  if (!r || r.erro) { f.aviso = (r && r.erro) || 'Não consegui ler esse link.'; return render(); }
+  let i = f.links.findIndex(l => l.url === f.link); if (i < 0) i = f.links.findIndex(l => !l.url); if (i < 0) i = 0;
+  f.links[i] = { loja: r.loja || 'outra', url: f.link, preco: r.preco || f.links[i].preco };
+  if (r.nome) f.nome = r.nome;
+  if (r.imagem) f.img = r.imagem;
+  if (!f.item && r.nome) f.item = sugerirItem(r.nome) || '';
+  if (!f.palavras && r.nome) f.palavras = r.nome.toLowerCase().split(/[^a-zà-ú0-9]+/).filter(w => w.length > 4).slice(0, 2).join(', ');
+  f.aviso = r.ok ? '' : 'A loja não mostrou os dados. O link já foi colocado abaixo; complete o nome à mão.';
+  f.link = ''; render(); toast(r.ok ? 'Dados encontrados ✓' : 'Link adicionado');
 }
 async function saveOffer() {
   const g = id => document.getElementById(id), f = S.af;
@@ -1339,6 +1379,7 @@ $app.addEventListener('click', async ev => {
   if (ds.atab) return openAdmin(ds.atab);
   if (ds.aoffer) return openOfferForm(ds.aoffer);
   if (ds.abanner) return openBannerForm(ds.abanner);
+  if (id === 'afbuscar') return buscarLink();
   if (id === 'afsave') return saveOffer();
   if (id === 'afdel') return deleteOffer();
   if (id === 'absave') return saveBanner();
@@ -1434,6 +1475,7 @@ $app.addEventListener('keydown', ev => {
   if (S.view === 'login' && t.tagName === 'INPUT') return doAuth();
   if (S.view === 'newpass') return savePass();
   if (t.id === 'carsearch') { ev.preventDefault(); t.blur(); return; }
+  if (t.id === 'aflink') { ev.preventDefault(); return buscarLink(); }
   if (t.id === 'caixa1' || t.id === 'aporte1' || t.id === 'cxval' || t.id === 'cxdesc' || t.dataset.additem || t.dataset.addhave || t.dataset.ficha || t.dataset.porc || t.dataset.pname || t.classList.contains('who')) { ev.preventDefault(); t.blur(); }
 });
 // ---- Versão do app (troque a cada publicação) e "puxar para atualizar" ----
