@@ -189,7 +189,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '6.1';
+const APP_VERSION = '7.0';
 const $app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -244,6 +244,7 @@ function viewLogin() {
     ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>` : ''}
     <label class="f">E-mail<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com"></label>
     <label class="f">Senha<input id="senha" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" placeholder="mínimo 6 caracteres"></label>
+    ${signup ? `<label class="row" style="gap:12px;align-items:flex-start"><input id="souprep" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:2px"><span class="small"><b>Também sou preparador</b><br><span class="mut">Quer aparecer para quem procura preparador na sua cidade? Você completa os dados depois, e pode desmarcar quando quiser.</span></span></label>` : ''}
     <button class="btn" id="go" ${S.busy ? 'disabled' : ''}>${signup ? 'CRIAR MINHA CONTA' : 'ENTRAR'}</button>
     <div class="row between"><button class="link" id="swap">${signup ? 'Já tenho conta · entrar' : 'Não tenho conta · criar'}</button>${signup ? '' : '<button class="link" id="forgot" style="color:var(--mut)">Esqueci a senha</button>'}</div>
   </div>`;
@@ -260,7 +261,8 @@ async function doAuth() {
   try {
     if (S.mode === 'criar') {
       const nome = (document.getElementById('nome')?.value || '').trim();
-      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome } } });
+      const preparador = !!document.getElementById('souprep')?.checked;
+      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome, preparador } } });
       if (error) throw error;
       if (!data.session) { S.busy = false; S.mode = 'entrar'; render(); return toast('Conta criada! Confirme pelo link que chegou no seu e-mail e depois entre.'); }
       S.user = data.user;
@@ -289,10 +291,11 @@ async function savePass() {
 
 // ---------------- Garagem ----------------
 async function loadGarage() {
-  await loadCatalog().catch(() => {});
+  await Promise.all([loadCatalog(), loadPreps()]).catch(() => {});
   const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
   if (error) { S.view = 'garage'; S.projects = []; render(); return fail(error); }
   S.projects = data; S.view = 'garage'; render();
+  if (S.user.user_metadata && S.user.user_metadata.preparador && !S.prep) { try { if (!localStorage.getItem('pp_prep_conv')) { localStorage.setItem('pp_prep_conv', '1'); return openPerfil(true); } } catch (e) {} }
 }
 function viewGarage() {
   const cards = S.projects.map(p => {
@@ -310,7 +313,7 @@ function viewGarage() {
     </button>`;
   }).join('');
   return `
-  <div class="row between"><div class="brand">PREP<b>.PRO</b></div><div class="row" style="gap:16px">${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <div class="row between"><div class="brand">PREP<b>.PRO</b></div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
   ${S.projects.length ? cards : `
     <div class="card hot">
@@ -548,7 +551,7 @@ function viewPhase() {
       <button class="btn" id="closecyc">FECHAR CICLO · PRÓXIMO STAGE</button>
     </div>`;
   } else {
-    body = P.stages.map(s => stageCard(s, n)).join('');
+    body = (n === 4 ? prepCard() : '') + P.stages.map(s => stageCard(s, n)).join('');
   }
   return `<div class="col">${phaseHead()}${body}</div>`;
 }
@@ -604,7 +607,7 @@ function stageCard(s, n) {
     return `<div class="card">
       <div class="row between"><b>${esc(s.nome)}</b><span class="tiny mut">sugestão: ${esc(s.quem_faz || '—')}</span></div>
       <input class="who" data-who="${s.id}" value="${esc(st.quem_faz || '')}" placeholder="Nome da oficina ou do profissional">
-      <div class="chips"><button class="chip xs ${st.quem_faz === 'Eu mesmo' ? 'on' : ''}" data-self="${s.id}">Eu mesmo</button></div>
+      <div class="chips"><button class="chip xs ${st.quem_faz === 'Eu mesmo' ? 'on' : ''}" data-self="${s.id}">Eu mesmo</button>${s.e_legalizacao ? '' : prepChips(s.id)}</div>
       ${s.e_legalizacao ? '<div class="legal">Vistoria em ITL credenciada pelo Inmetro, depois da autorização do Detran.</div>' : ''}
     </div>`;
   }
@@ -1048,11 +1051,11 @@ async function publishDiary() {
 const LOJAS = { mercado_livre: 'Mercado Livre', shopee: 'Shopee', aliexpress: 'AliExpress', amazon: 'Amazon', outra: 'Outra loja' };
 async function loadCatalog() {
   const [pf, of, bn] = await Promise.all([
-    sb.from('profiles').select('is_admin').eq('id', S.user.id).single(),
+    sb.from('profiles').select('*').eq('id', S.user.id).single(),
     sb.from('products').select('*, product_links(*)'),
     sb.from('banners').select('*')
   ]);
-  S.isAdmin = !!(pf.data && pf.data.is_admin);
+  S.isAdmin = !!(pf.data && pf.data.is_admin); S.perfil = pf.data || null;
   S.offers = of.error ? [] : (of.data || []);
   S.banners = bn.error ? [] : (bn.data || []);
 }
@@ -1111,6 +1114,7 @@ async function openAdmin(tab) {
   if (!S.adminTpl) { const { data } = await sb.from('template_stages').select('nome,ordem,template_items(id,nome,ordem)').order('ordem'); S.adminTpl = data || []; }
   await Promise.all([loadCatalog(), loadCars()]);
   if (S.atab === 'cliques') await loadClicks();
+  if (S.atab === 'preparadores') await loadAdminPreps();
   render();
 }
 function tplItemName(id) { for (const s of S.adminTpl || []) { const t = (s.template_items || []).find(t => t.id === id); if (t) return t.nome; } return ''; }
@@ -1129,6 +1133,8 @@ function viewAdmin() {
       ${(S.banners || []).map(b => `<button class="card pcard" data-abanner="${b.id}" style="opacity:${b.ativo ? 1 : .5}">
         <div class="row between"><b>${esc(b.parceiro)}</b><span class="tiny mut">${b.ativo ? 'ativo' : 'pausado'}</span></div>
         <span class="small">${esc(b.titulo)}</span><span class="tiny mut">Aparece em: ${posLabel(b)}</span></button>`).join('') || '<p class="small mut">Nenhum banner ainda.</p>'}`;
+  } else if (t === 'preparadores') {
+    body = viewAdminPreps();
   } else {
     const c = S.clicks || { links: {}, banners: {} };
     const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
@@ -1138,7 +1144,7 @@ function viewAdmin() {
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
   return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
-    <div class="tabs"><button class="${t === 'ofertas' ? 'on' : ''}" data-atab="ofertas">Ofertas</button><button class="${t === 'parceiros' ? 'on' : ''}" data-atab="parceiros">Parceiros</button><button class="${t === 'cliques' ? 'on' : ''}" data-atab="cliques">Cliques</button></div>
+    <div class="tabs" style="grid-template-columns:repeat(4,1fr)"><button class="${t === 'ofertas' ? 'on' : ''}" data-atab="ofertas">Ofertas</button><button class="${t === 'parceiros' ? 'on' : ''}" data-atab="parceiros">Parceiros</button><button class="${t === 'preparadores' ? 'on' : ''}" data-atab="preparadores">Preparad.</button><button class="${t === 'cliques' ? 'on' : ''}" data-atab="cliques">Cliques</button></div>
     ${body}`;
 }
 function posLabel(b) { if (b.posicao === 'stage') { const s = (S.adminTpl || []).find(x => x.ordem === b.stage_ordem); return s ? s.nome : 'Stage ' + b.stage_ordem; } return b.posicao === 'garagem' ? 'Garagem' : 'Aba Gastos'; }
@@ -1271,6 +1277,148 @@ async function deleteBanner() {
   toast('Banner excluído.'); await openAdmin('parceiros');
 }
 
+// ---------------- Perfil e preparadores ----------------
+const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
+const ESPEC = ['Turbo', 'Injeção', 'Motor', 'Câmbio', 'Suspensão', 'Freios', 'Elétrica', 'Dinamômetro', 'Funilaria e pintura', 'Estética', 'Som', 'Legalização'];
+const isDest = p => p && p.destaque_ate && new Date(p.destaque_ate) > new Date();
+const fmtData = d => new Date(d).toLocaleDateString('pt-BR');
+async function loadPreps() {
+  const [all, mine] = await Promise.all([
+    sb.from('preparadores').select('*').eq('ativo', true),
+    sb.from('preparadores').select('*').eq('user_id', S.user.id)
+  ]);
+  S.preps = all.error ? [] : (all.data || []);
+  S.prep = mine.error ? null : ((mine.data || [])[0] || null);
+}
+function prepsPerto() {
+  const pf = S.perfil || {}, uf = pf.uf, cid = (pf.cidade || '').trim().toLowerCase();
+  if (!uf) return { uf: null, list: [], onde: '' };
+  const est = (S.preps || []).filter(p => p.uf === uf);
+  const city = est.filter(p => p.cidade.trim().toLowerCase() === cid);
+  const list = (city.length ? city : est).slice().sort((a, b) => (isDest(b) - isDest(a)) || a.nome_oficina.localeCompare(b.nome_oficina));
+  return { uf, list, onde: city.length ? pf.cidade : (est.length ? 'em ' + uf : pf.cidade || uf) };
+}
+function zap(n) { let d = String(n || '').replace(/\D/g, ''); if (!d) return null; if (!d.startsWith('55') || d.length < 12) d = '55' + d; return d; }
+function prepCard() {
+  const r = prepsPerto();
+  if (!r.uf) return `<div class="card"><b>Preparadores perto de você</b><span class="small mut">Informe sua cidade no perfil para ver quem prepara carro na sua região.</span><button class="btn ghost sm" id="perfil">Informar minha cidade</button></div>`;
+  return `<div class="card">
+    <div class="row between"><b>Preparadores perto de você</b><span class="tiny mut">${esc(r.onde)}</span></div>
+    ${r.list.length ? r.list.slice(0, 8).map(p => `<div class="card" style="background:var(--card2);gap:6px${isDest(p) ? ';border-color:#5A3520' : ''}">
+      <div class="row between"><b>${esc(p.nome_oficina)}</b>${isDest(p) ? '<span class="tiny" style="color:var(--acc2);font-weight:700;letter-spacing:1px">DESTAQUE</span>' : ''}</div>
+      <span class="tiny mut">${esc(p.cidade)}/${esc(p.uf)}${(p.especialidades || []).length ? ' · ' + esc(p.especialidades.join(', ')) : ''}</span>
+      ${p.descricao ? `<span class="small mut" style="line-height:1.4">${esc(p.descricao)}</span>` : ''}
+      <div class="row" style="gap:8px">${zap(p.whatsapp) ? `<button class="btn sm" data-pwa="${p.user_id}">WhatsApp</button>` : ''}${p.instagram ? `<button class="btn ghost sm" data-pig="${p.user_id}">Instagram</button>` : ''}</div>
+    </div>`).join('') : `<span class="small mut">Ainda não tem preparador cadastrado ${esc(r.onde)}. Conhece algum? Indique o Prep.pro para ele.</span>`}
+    <span class="tiny mut">Destaque é um espaço pago pelo preparador.</span>
+  </div>`;
+}
+function prepChips(stageId) {
+  const st = S.P.pst[stageId] || {};
+  return prepsPerto().list.slice(0, 3).map(p => `<button class="chip xs ${st.quem_faz === p.nome_oficina ? 'on' : ''}" data-pickprep="${stageId}|${p.user_id}">${esc(p.nome_oficina)}</button>`).join('');
+}
+function logContato(p, tipo) { sb.from('preparador_contatos').insert({ preparador_id: p.user_id, user_id: S.user.id, project_id: S.P ? S.P.p.id : null, tipo }).then(() => {}); }
+function abrirPrep(id, tipo) {
+  const p = (S.preps || []).find(x => x.user_id === id); if (!p) return;
+  const nomeCarro = S.P ? S.P.p.nome : 'meu carro';
+  const url = tipo === 'whatsapp' ? `https://wa.me/${zap(p.whatsapp)}?text=${encodeURIComponent('Olá! Vi você no Prep.pro e quero conversar sobre o meu projeto (' + nomeCarro + ').')}`
+    : 'https://instagram.com/' + String(p.instagram).replace(/^@|https?:\/\/(www\.)?instagram\.com\//g, '').replace(/\/.*$/, '');
+  window.open(url, '_blank', 'noopener'); logContato(p, tipo);
+}
+async function pickPrep(v) {
+  const [stageId, uid] = v.split('|'); const p = (S.preps || []).find(x => x.user_id === uid); if (!p) return;
+  await saveStage(stageId, { quem_faz: p.nome_oficina }); logContato(p, 'escolheu'); render(); return syncMarcha();
+}
+async function openPerfil(prepAberto) {
+  if (S.view !== 'perfil') S.backTo = S.view;
+  await Promise.all([loadCatalog(), loadPreps()]);
+  const pf = S.perfil || {}, pr = S.prep;
+  let contatos = 0;
+  if (pr) { const { data } = await sb.from('preparador_contatos').select('id').eq('preparador_id', S.user.id); contatos = (data || []).length; }
+  S.pf = { nome: pf.nome || '', celular: pf.celular || '', cidade: pf.cidade || '', uf: pf.uf || '',
+    prep: pr ? pr.ativo : !!prepAberto, oficina: pr ? pr.nome_oficina : (pf.nome || ''), pcidade: pr ? pr.cidade : (pf.cidade || ''), puf: pr ? pr.uf : (pf.uf || ''),
+    whatsapp: pr ? pr.whatsapp || '' : (pf.celular || ''), instagram: pr ? pr.instagram || '' : '', esp: pr ? (pr.especialidades || []).slice() : [], desc: pr ? pr.descricao || '' : '', contatos };
+  S.view = 'perfil'; render(); window.scrollTo(0, 0);
+}
+function keepPf() {
+  const g = id => document.getElementById(id), f = S.pf; if (!f || !g('pfnome')) return;
+  f.nome = g('pfnome').value; f.celular = g('pfcel').value; f.cidade = g('pfcid').value; f.uf = g('pfuf').value; f.prep = g('pfprep').checked;
+  if (g('pfof')) { f.oficina = g('pfof').value; f.pcidade = g('pfpcid').value; f.puf = g('pfpuf').value; f.whatsapp = g('pfwa').value; f.instagram = g('pfig').value; f.desc = g('pfdesc').value; }
+}
+const ufSel = (id, v) => `<select id="${id}"><option value="">UF</option>${UFS.map(u => `<option ${v === u ? 'selected' : ''}>${u}</option>`).join('')}</select>`;
+function viewPerfil() {
+  const f = S.pf, pr = S.prep;
+  return `<div class="row"><button class="icon-btn" id="pfback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Meu perfil</h1></div>
+  <div class="card">
+    <label class="f">Nome<input id="pfnome" value="${esc(f.nome)}" autocomplete="name"></label>
+    <label class="f">Celular<input id="pfcel" value="${esc(f.celular)}" inputmode="tel" placeholder="(65) 99999-9999"></label>
+    <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Cidade<input id="pfcid" value="${esc(f.cidade)}" placeholder="Ex.: Cuiabá"></label><label class="f" style="width:96px">UF${ufSel('pfuf', f.uf)}</label></div>
+    <span class="tiny mut">Sua cidade serve para mostrar preparadores perto de você.</span>
+  </div>
+  <div class="card" style="${f.prep ? 'border-color:#5A3520' : ''}">
+    <label class="row" style="gap:12px;align-items:flex-start"><input id="pfprep" type="checkbox" ${f.prep ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Também sou preparador</b><br><span class="small mut">Seus dados aparecem para quem busca preparador na sua cidade. Pode desmarcar quando quiser.</span></span></label>
+    ${f.prep ? `
+    <label class="f">Nome da oficina ou como te chamam<input id="pfof" value="${esc(f.oficina)}" placeholder="Ex.: RS Performance"></label>
+    <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Cidade onde atende<input id="pfpcid" value="${esc(f.pcidade)}"></label><label class="f" style="width:96px">UF${ufSel('pfpuf', f.puf)}</label></div>
+    <label class="f">WhatsApp para contato<input id="pfwa" value="${esc(f.whatsapp)}" inputmode="tel" placeholder="(65) 99999-9999"></label>
+    <label class="f">Instagram (opcional)<input id="pfig" value="${esc(f.instagram)}" placeholder="@suaoficina"></label>
+    <div class="col" style="gap:6px"><span class="small mut">O que você faz</span><div class="chips">${ESPEC.map(e => `<button class="chip xs ${f.esp.includes(e) ? 'on' : ''}" data-esp="${esc(e)}">${esc(e)}</button>`).join('')}</div></div>
+    <label class="f">Sobre você (opcional)<textarea id="pfdesc" placeholder="Uma ou duas frases sobre o seu trabalho.">${esc(f.desc)}</textarea></label>
+    ${pr ? `<div class="kpis"><div class="kpi"><span>Contatos recebidos</span><b>${f.contatos}</b></div><div class="kpi"><span>Destaque</span><b style="font-size:16px">${isDest(pr) ? 'até ' + fmtData(pr.destaque_ate) : 'não'}</b></div></div>` : ''}
+    ${isDest(pr) ? '' : `<div class="card" style="background:var(--card2);gap:6px">
+      <b>Apareça no topo da sua cidade</b>
+      <span class="small mut" style="line-height:1.4">Com o Destaque, seu nome vem primeiro para quem busca preparador na sua cidade. R$ 49,90 por mês.</span>
+      ${pr && pr.quer_destaque_em ? '<span class="small" style="color:var(--ok2)">Interesse registrado ✓ Avisamos quando liberar.</span>' : `<button class="btn ghost sm" id="pfinteresse">Tenho interesse</button>`}
+    </div>`}` : ''}
+  </div>
+  <button class="btn" id="pfsave">SALVAR PERFIL</button>`;
+}
+async function savePerfil() {
+  keepPf(); const f = S.pf;
+  const { error } = await sb.from('profiles').update({ nome: f.nome.trim() || null, celular: f.celular.trim() || null, cidade: f.cidade.trim() || null, uf: f.uf || null }).eq('id', S.user.id);
+  if (error) return fail(error);
+  if (f.prep) {
+    if (!f.oficina.trim() || !f.pcidade.trim() || !f.puf) return toast('Preencha nome da oficina, cidade e UF onde atende.');
+    if (!zap(f.whatsapp) && !f.instagram.trim()) return toast('Informe um WhatsApp ou Instagram para os clientes falarem com você.');
+    const row = { user_id: S.user.id, ativo: true, nome_oficina: f.oficina.trim(), cidade: f.pcidade.trim(), uf: f.puf, whatsapp: f.whatsapp.trim() || null, instagram: f.instagram.trim() || null, especialidades: f.esp, descricao: f.desc.trim() || null };
+    const { error: e2 } = await sb.from('preparadores').upsert(row, { onConflict: 'user_id' });
+    if (e2) return fail(e2);
+  } else if (S.prep) {
+    const { error: e3 } = await sb.from('preparadores').update({ ativo: false }).eq('user_id', S.user.id);
+    if (e3) return fail(e3);
+  }
+  toast(f.prep ? 'Perfil salvo ✓ Você já aparece nas buscas.' : 'Perfil salvo ✓'); await openPerfil();
+}
+async function prepInteresse() {
+  keepPf(); if (!S.prep) return toast('Salve o perfil de preparador primeiro.');
+  const { error } = await sb.from('preparadores').update({ quer_destaque_em: new Date().toISOString() }).eq('user_id', S.user.id);
+  if (error) return fail(error);
+  toast('Anotado! Avisamos quando o Destaque liberar.'); await openPerfil();
+}
+// Admin · preparadores
+async function loadAdminPreps() {
+  const [p, c] = await Promise.all([sb.from('preparadores').select('*').order('nome_oficina'), sb.from('preparador_contatos').select('preparador_id')]);
+  S.aPreps = p.data || []; S.aPrepC = {};
+  (c.data || []).forEach(r => S.aPrepC[r.preparador_id] = (S.aPrepC[r.preparador_id] || 0) + 1);
+}
+function viewAdminPreps() {
+  const l = S.aPreps || [];
+  return l.length ? l.map(p => `<div class="card" style="gap:6px;opacity:${p.ativo ? 1 : .5}">
+    <div class="row between"><b>${esc(p.nome_oficina)}</b><span class="tiny mut">${p.ativo ? 'visível' : 'oculto'}</span></div>
+    <span class="tiny mut">${esc(p.cidade)}/${esc(p.uf)} · ${S.aPrepC[p.user_id] || 0} contatos${p.quer_destaque_em ? ' · <b style="color:var(--acc2)">quer destaque</b>' : ''}</span>
+    <span class="small">${isDest(p) ? 'Destaque até ' + fmtData(p.destaque_ate) : 'Sem destaque'}</span>
+    <div class="row" style="gap:8px"><button class="btn sm" data-adest="${p.user_id}">+30 dias de destaque</button>${isDest(p) ? `<button class="btn ghost sm" data-adestx="${p.user_id}">Tirar</button>` : ''}</div>
+  </div>`).join('') : '<p class="small mut">Nenhum preparador cadastrado ainda.</p>';
+}
+async function adminDestaque(uid, tirar) {
+  const p = (S.aPreps || []).find(x => x.user_id === uid); if (!p) return;
+  const base = isDest(p) ? new Date(p.destaque_ate) : new Date();
+  const ate = tirar ? null : new Date(base.getTime() + 30 * 864e5).toISOString();
+  const { error } = await sb.from('preparadores').update({ destaque_ate: ate }).eq('user_id', uid);
+  if (error) return fail(error);
+  toast(tirar ? 'Destaque removido.' : 'Destaque até ' + fmtData(ate) + ' ✓'); await openAdmin('preparadores');
+}
+
 // ---------------- Gráficos ----------------
 const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
 const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
@@ -1352,7 +1500,7 @@ function chartAcum() {
 function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
-    : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+    : v === 'perfil' ? viewPerfil() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
   $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
@@ -1375,6 +1523,16 @@ $app.addEventListener('click', async ev => {
   if (ds.offers) return openOffers(ds.offers);
   if (ds.banner) return openBanner(ds.banner);
   if (id === 'admin') return openAdmin('ofertas');
+  if (id === 'perfil') return openPerfil();
+  if (id === 'pfback') return S.backTo === 'project' && S.P ? (S.view = 'project', render()) : loadGarage();
+  if (id === 'pfsave') return savePerfil();
+  if (id === 'pfinteresse') return prepInteresse();
+  if (ds.esp) { keepPf(); const e = ds.esp, a = S.pf.esp; a.includes(e) ? a.splice(a.indexOf(e), 1) : a.push(e); return render(); }
+  if (ds.pwa) return abrirPrep(ds.pwa, 'whatsapp');
+  if (ds.pig) return abrirPrep(ds.pig, 'instagram');
+  if (ds.pickprep) return pickPrep(ds.pickprep);
+  if (ds.adest) return adminDestaque(ds.adest, false);
+  if (ds.adestx) return adminDestaque(ds.adestx, true);
   if (id === 'adback') return loadGarage();
   if (ds.atab) return openAdmin(ds.atab);
   if (ds.aoffer) return openOfferForm(ds.aoffer);
@@ -1469,6 +1627,7 @@ $app.addEventListener('input', ev => {
   const sel = S.view === 'wizard' ? S.draft?.car_model_id : S.P?.p.car_model_id;
   const box = document.getElementById('carlist'); if (box) box.innerHTML = carListHtml(sel ?? null);
 });
+$app.addEventListener('change', ev => { if (ev.target.id === 'pfprep') { keepPf(); render(); } });
 $app.addEventListener('keydown', ev => {
   if (ev.key !== 'Enter') return;
   const t = ev.target;
