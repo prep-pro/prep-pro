@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prep.pro">
+<meta name="theme-color" content="#0E0F11">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Prep.pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#0E0F11;--card:#1A1C20;--card2:#15171A;--line:#2A2D33;--line2:#3A3E45;--fg:#F2EFEA;--mut:#A7AAB0;--mut2:#C9C6C0;--acc:#FF6A1F;--acc2:#FF8A4C;--ok:#3DBE7A;--ok2:#7FE0A8;--warn:#FFB27A;--bad:#FF7A7A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Barlow,system-ui,sans-serif;font-size:16px}
+body{min-height:100vh;min-height:100dvh}
+#app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 28px);display:flex;flex-direction:column;gap:14px}
+h1,h2,.cond{font-family:'Barlow Condensed',sans-serif}
+h1{margin:0;font-weight:700;font-size:34px;line-height:1}
+h2{margin:0;font-weight:700;font-size:24px;line-height:1.05}
+p{margin:0}
+.mut{color:var(--mut)}.small{font-size:13px}.tiny{font-size:12px}
+.brand{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:1px}.brand b{color:var(--acc)}
+.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+.col{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card.hot{border-color:var(--acc)}
+button{font-family:inherit;cursor:pointer}
+.btn{height:52px;border:0;border-radius:14px;background:var(--acc);color:#0E0F11;font:700 18px 'Barlow Condensed',sans-serif;letter-spacing:1px;width:100%}
+.btn:disabled{background:var(--line2);color:var(--mut)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font:500 15px Barlow,sans-serif;letter-spacing:0}
+.btn.danger{background:transparent;border:1px solid #6E2A2A;color:var(--bad);font:600 15px Barlow,sans-serif;letter-spacing:0}
+.btn.danger.armed{background:#6E2A2A;color:#fff}
+.btn.sm{height:40px;font-size:15px;width:auto;padding:0 14px}
+.icon-btn{width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);display:flex;align-items:center;justify-content:center}
+.x{width:32px;height:32px;flex:none;border-radius:8px;border:0;background:transparent;color:#6B7078;font-size:18px;line-height:1}
+.x.armed{background:#6E2A2A;color:#fff;width:auto;padding:0 8px;font-size:12px;font-weight:700}
+.link{background:none;border:0;color:var(--acc2);font:600 14px Barlow,sans-serif;padding:8px 0}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mut)}
+input,textarea,select{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:0 14px;font:500 16px Barlow,sans-serif;width:100%}
+select{appearance:none;-webkit-appearance:none}
+textarea{height:96px;padding:12px 14px;resize:vertical}
+input.who,input.add{height:42px;background:var(--card2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 14px;border-radius:20px;border:2px solid var(--line);background:var(--card);color:var(--fg);font:500 14px Barlow,sans-serif}
+.chip.on{border-color:var(--acc);background:#2A1A10}
+.chip.xs{min-height:34px;padding:0 11px;font-size:13px;border-width:1px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{text-align:left;border:2px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;color:var(--fg);display:flex;flex-direction:column;gap:3px}
+.opt.on{border-color:var(--acc);background:#2A1A10}
+.opt b{font-size:16px}.opt span{font-size:13px;color:var(--mut)}
+.segs{display:flex;gap:4px}.segs i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.segs i.d{background:var(--ok)}.segs i.c{background:var(--acc)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.bar>i{display:block;height:100%;background:var(--acc);border-radius:4px}
+.bar.ok>i{background:var(--ok)}.bar.over>i{background:var(--bad)}.bar.plan>i{background:#6B7078}
+.pill{min-width:92px;height:32px;border-radius:16px;border:0;font:600 13px Barlow,sans-serif;padding:0 10px;flex:none}
+.st-lista{background:var(--line);color:var(--mut2)}.st-comprado{background:#3A2410;color:var(--warn)}.st-instalado{background:#143222;color:var(--ok2)}
+.st-ok{background:#143222;color:var(--ok2)}.st-verificar{background:#3A2410;color:var(--warn)}.st-nao_sei{background:var(--line);color:var(--mut2)}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:46px;border-bottom:1px solid var(--line);padding:3px 0}
+.item:last-child{border-bottom:0}
+.item .nm{flex:1;min-width:0;font-size:14px}
+.legal{background:#0F2233;border:1px solid #1E4A6E;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45;color:#CFE6F8}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border-radius:12px;padding:4px;gap:4px}
+.tabs button{height:40px;border:0;border-radius:9px;background:transparent;color:var(--mut);font:600 15px Barlow,sans-serif}
+.tabs button.on{background:var(--fg);color:var(--bg)}
+.tabs.sub{background:transparent;padding:0;grid-template-columns:repeat(3,1fr)}.tabs.sub button{height:34px;border:1px solid var(--line);font-size:13px}.tabs.sub button.on{border-color:var(--fg)}
+.pcard{text-align:left;color:var(--fg);width:100%}
+.dot{width:10px;height:10px;border-radius:5px;flex:none}
+.photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.photos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:var(--card2)}
+.gear{background:#121417;border:1px solid var(--line);border-radius:18px;padding:8px 6px 4px}
+.gear svg{display:block;width:100%;height:auto}
+.gear g[data-phase]{cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.kpi span{font-size:12px;color:var(--mut)}.kpi b{font:700 22px 'Barlow Condensed',sans-serif}
+.warnbox{background:#3A1414;border:1px solid #6E2A2A;border-radius:12px;padding:10px 12px;font-size:13px;color:#FFC9C9}
+.exp{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);padding:10px 0;color:var(--fg);text-align:left}
+.exp:last-child{border-bottom:0}
+.exp .d{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.exp .d b{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp .d span{font-size:12px;color:var(--mut)}
+.exp .v{text-align:right;display:flex;flex-direction:column;gap:2px;flex:none}
+.exp .v b{font:700 17px 'Barlow Condensed',sans-serif}.exp .v span{font-size:11px;color:var(--mut)}
+.tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.5px;padding:2px 6px;border-radius:6px;margin-right:6px;vertical-align:1px}
+.money2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fab{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:3;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.carlist{display:flex;flex-direction:column;gap:8px;max-height:380px;overflow:auto;-webkit-overflow-scrolling:touch}
+.carrow{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--card2);border:2px solid var(--line);border-radius:12px;padding:10px 12px;color:var(--fg);width:100%}
+.carrow.on{border-color:var(--acc);background:#2A1A10}
+.carrow b{font-size:15px}.carrow span{font-size:12px;color:var(--mut)}
+.has{display:flex;gap:4px;flex:none}.has button{height:30px;padding:0 9px;border-radius:15px;border:1px solid var(--line);background:transparent;color:var(--mut);font:600 12px Barlow,sans-serif}
+.has button.on{border-color:var(--acc);background:#2A1A10;color:var(--fg)}
+.badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;background:#143222;color:var(--ok2);margin-left:6px;white-space:nowrap}
+.auto{font-size:11px;font-weight:700;color:var(--acc2);margin-left:6px}
+.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.spec div{background:var(--card2);border-radius:10px;padding:8px}.spec span{display:block;font-size:11px;color:var(--mut)}.spec b{font:700 16px 'Barlow Condensed',sans-serif}
+#splash{position:fixed;inset:0;z-index:50;background:#0B0C0E;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .6s ease}
+#splash canvas{position:absolute;inset:0;width:100%;height:100%}
+#splash .lg{position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:68px;letter-spacing:6px;color:#F2EFEA;opacity:0;filter:blur(18px);transform:scale(1.18);transition:opacity 1.6s ease,filter 1.6s ease,transform 1.8s cubic-bezier(.2,.8,.2,1),letter-spacing 1.8s ease}
+#splash .lg b{color:var(--acc)}
+#splash .lg.on{opacity:1;filter:blur(0);transform:scale(1);letter-spacing:1px}
+#splash .tl{position:relative;margin-top:4px;font:600 13px Barlow,sans-serif;letter-spacing:5px;color:#A7AAB0;opacity:0;transition:opacity 1s ease .9s}
+#splash .tl.on{opacity:1}
+#splash.out{opacity:0;pointer-events:none}
+#ptr{position:fixed;top:calc(env(safe-area-inset-top) + 8px);left:50%;transform:translate(-50%,-70px);width:42px;height:42px;border-radius:21px;background:#1A1C20;border:1px solid #3A3E45;display:flex;align-items:center;justify-content:center;z-index:30;opacity:0;transition:transform .25s ease,opacity .25s ease;box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:none}
+#ptr svg{display:block}
+#ptr.spin svg{animation:ptrspin .8s linear infinite}
+@keyframes ptrspin{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 20px);max-width:480px;width:calc(100% - 36px);background:var(--fg);color:var(--bg);border-radius:12px;padding:12px 14px;font:600 14px Barlow,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.5);display:none;z-index:9}
+.center{min-height:60vh;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<div id="splash" aria-hidden="true"><canvas id="smoke"></canvas><div class="lg">PREP<b>.PRO</b></div><div class="tl">AS 5 MARCHAS</div></div>
+<div id="app"><div class="center mut">Carregando…</div></div>
+<div id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ---- Abertura: logo surgindo da fumaça (uma vez por abertura do app; toque para pular) ----
+(function splash() {
+  const el = document.getElementById('splash'); if (!el) return;
+  let seen = false;
+  try { seen = sessionStorage.getItem('pp_splash') === '1'; sessionStorage.setItem('pp_splash', '1'); } catch (e) {}
+  if (seen) { el.remove(); return; }
+  const lg = el.querySelector('.lg'), tl = el.querySelector('.tl');
+  let done = false, raf;
+  const end = () => { if (done) return; done = true; el.classList.add('out'); setTimeout(() => { cancelAnimationFrame(raf); el.remove(); }, 650); };
+  el.addEventListener('click', end);
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { lg.classList.add('on'); tl.classList.add('on'); setTimeout(end, 1200); return; }
+  const cv = document.getElementById('smoke'), ctx = cv.getContext('2d'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  let W, H; const size = () => { W = cv.width = innerWidth * dpr; H = cv.height = innerHeight * dpr; }; size(); addEventListener('resize', size);
+  const parts = [], t0 = performance.now();
+  const spawn = n => { for (let i = 0; i < n; i++) parts.push({
+    x: W * (.1 + Math.random() * .8), y: H * (.45 + Math.random() * .5),
+    vx: (Math.random() - .5) * .9 * dpr, vy: -(1.2 + Math.random() * 2) * dpr,
+    r: (20 + Math.random() * 40) * dpr, g: (.5 + Math.random() * .9) * dpr, life: 0, max: 170 + Math.random() * 140, tone: 120 + Math.floor(Math.random() * 70) }); };
+  const frame = t => {
+    ctx.clearRect(0, 0, W, H);
+    if (t - t0 < 2200) spawn(4);
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i]; p.life++; p.x += p.vx; p.y += p.vy; p.r += p.g; p.vx *= .995;
+      const k = p.life / p.max; if (k >= 1) { parts.splice(i, 1); continue; }
+      const a = k < .25 ? k / .25 * .11 : .11 * (1 - (k - .25) / .75);
+      const gr = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+      gr.addColorStop(0, `rgba(${p.tone},${p.tone},${p.tone + 8},${a})`); gr.addColorStop(1, `rgba(${p.tone},${p.tone},${p.tone},0)`);
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    if (!done) raf = requestAnimationFrame(frame);
+  };
+  raf = requestAnimationFrame(frame);
+  const fonts = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 700))]) : Promise.resolve();
+  fonts.then(() => setTimeout(() => { lg.classList.add('on'); tl.classList.add('on'); }, 450));
+  setTimeout(end, 3500);
+})();
+
+// ---- Configuração do Supabase (chave pública: pode ficar no app) ----
+const SB_URL = 'https://ovmxkdekeotvtqpcetsj.supabase.co';
+const SB_KEY = 'sb_publishable_VD6fSI_xcJI50fNWayQoAg_sUTTHLQa';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+const MARCHAS = ['O que você quer', 'O que você tem', 'O que você precisa', 'Quem faz', 'Execução', 'Acerto fino'];
+const SHORT = ['Quer', 'Tem', 'Precisa', 'Quem faz', 'Executa', 'Acerto'];
+const GOALS = [['rua','Rua forte','Turbo no dia a dia'],['arrancada','Arrancada','Tempo no 402 m'],['offroad','Off-road','Trilha e lama'],['track','Track day','Curva e freio'],['visual','Visual / stance','Roda, altura, estética'],['restauro','Restauração','Clássico original']];
+const PRAZOS = ['6 meses','1 ano','2 anos','Sem pressa'];
+// 2ª marcha: o que a base precisa aguentar, por tipo de projeto
+const CHECKS = {
+  forca: ['Compressão dos cilindros', 'Embreagem', 'Arrefecimento', 'Câmbio e diferencial', 'Freios'],
+  offroad: ['Tração 4x4', 'Suspensão', 'Arrefecimento', 'Freios', 'Ferrugem no chassi'],
+  visual: ['Lataria e ferrugem', 'Parte elétrica', 'Suspensão', 'Motor e vazamentos', 'Interior']
+};
+const TPL_OF = { rua: 'forca', arrancada: 'forca', track: 'forca', offroad: 'offroad', visual: 'visual', restauro: 'visual' };
+const checksFor = goal => CHECKS[TPL_OF[goal] || 'forca'];
+const CHECK_OPTS = [['ok', 'OK'], ['verificar', 'Revisar'], ['nao_sei', 'Não sei']];
+const BRANDS = ['Chevrolet', 'Volkswagen', 'Fiat', 'Ford'];
+const HAS_OPTS = [['', 'Preciso'], ['guardado', 'Guardado'], ['no_carro', 'No carro']];
+const ST_LABEL = { lista: 'Na lista', comprado: 'Comprado', instalado: 'Instalado' };
+const ST_NEXT = { lista: 'comprado', comprado: 'instalado', instalado: 'lista' };
+const TIPOS = { peca: 'Peça', mao_de_obra: 'Mão de obra', frete: 'Frete', servico: 'Serviço', outro: 'Outro' };
+const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD66B'], frete: ['#2A1A3A', '#C9A8FF'], servico: ['#143222', '#7FE0A8'], outro: ['#2A2D33', '#C9C6C0'] };
+const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
+
+const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
+const $app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const num = v => (v === null || v === undefined || v === '') ? 0 : Number(v);
+const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+const brl2 = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtIn = v => (v === null || v === undefined) ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+function parseMoney(s) {
+  s = String(s || '').replace(/[R$\s]/g, '');
+  if (!s) return null;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) s = s.replace(/\./g, '');
+  const n = parseFloat(s); return isNaN(n) ? null : Math.round(n * 100) / 100;
+}
+let toastT;
+function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => t.style.display = 'none', 3200); }
+function fail(e) { console.error(e); toast('Erro: ' + (e?.message || e)); }
+function goalName(id) { const g = GOALS.find(g => g[0] === id); return g ? g[1] : id; }
+function segs(m) { let h = ''; for (let n = 1; n <= 6; n++) h += `<i class="${n < m ? 'd' : n === m ? 'c' : ''}"></i>`; return `<div class="segs">${h}</div>`; }
+const carName = c => [c.marca, c.modelo, c.versao, c.motor].filter(Boolean).join(' ');
+const fmtNum = v => Number(v).toLocaleString('pt-BR');
+function carLine(p) { const c = p.car_models, f = p.ficha || {}; return c ? carName(c) + (f.ano ? ' · ' + f.ano : '') : (p.tem_carro ? (f.obs || 'Carro próprio') : 'Ainda é um sonho'); }
+function sumBy(arr, f) { return arr.reduce((a, x) => a + num(f(x)), 0); }
+function shortStage(s) { return s ? s.nome.split(' · ')[0] : 'Geral'; }
+function tag(t) { const c = TIPO_COR[t] || TIPO_COR.outro; return `<span class="tag" style="background:${c[0]};color:${c[1]}">${(TIPOS[t] || t).toUpperCase()}</span>`; }
+// Confirmação em dois toques (sem pop-ups)
+function armed(key) { return S.armed === key; }
+function arm(key) { if (S.armed === key) { S.armed = null; return true; } S.armed = key; render(); setTimeout(() => { if (S.armed === key) { S.armed = null; render(); } }, 4000); return false; }
+
+// ---------------- Início ----------------
+async function init() {
+  sb.auth.onAuthStateChange((ev, s) => {
+    const was = !!S.user; S.user = s?.user || null;
+    if (ev === 'PASSWORD_RECOVERY') { S.view = 'newpass'; render(); return; }
+    if (!S.user && was) { S.view = 'login'; render(); }
+  });
+  const { data: { session } } = await sb.auth.getSession();
+  S.user = session?.user || null;
+  if (S.view === 'newpass') return;
+  if (S.user) await loadGarage(); else { S.view = 'login'; render(); }
+}
+
+// ---------------- Login e senha ----------------
+function viewLogin() {
+  const signup = S.mode === 'criar';
+  return `
+  <div class="brand">PREP<b>.PRO</b></div>
+  <h1 style="font-size:40px">Todo carro preparado começou como um sonho.</h1>
+  <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
+  <div class="col" style="margin-top:8px">
+    ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>` : ''}
+    <label class="f">E-mail<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com"></label>
+    <label class="f">Senha<input id="senha" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" placeholder="mínimo 6 caracteres"></label>
+    <button class="btn" id="go" ${S.busy ? 'disabled' : ''}>${signup ? 'CRIAR MINHA CONTA' : 'ENTRAR'}</button>
+    <div class="row between"><button class="link" id="swap">${signup ? 'Já tenho conta · entrar' : 'Não tenho conta · criar'}</button>${signup ? '' : '<button class="link" id="forgot" style="color:var(--mut)">Esqueci a senha</button>'}</div>
+  </div>`;
+}
+function viewNewPass() {
+  return `<div class="brand">PREP<b>.PRO</b></div><h1>Nova senha</h1>
+  <label class="f">Digite a nova senha<input id="np" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
+  <button class="btn" id="savepass">SALVAR NOVA SENHA</button>`;
+}
+async function doAuth() {
+  const email = document.getElementById('email').value.trim(), senha = document.getElementById('senha').value;
+  if (!email || senha.length < 6) return toast('Preencha e-mail e uma senha com 6 ou mais caracteres.');
+  S.busy = true; render();
+  try {
+    if (S.mode === 'criar') {
+      const nome = (document.getElementById('nome')?.value || '').trim();
+      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome } } });
+      if (error) throw error;
+      if (!data.session) { S.busy = false; S.mode = 'entrar'; render(); return toast('Conta criada! Confirme pelo link que chegou no seu e-mail e depois entre.'); }
+      S.user = data.user;
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
+      if (error) throw error;
+      S.user = data.user;
+    }
+    S.busy = false; await loadGarage();
+  } catch (e) { S.busy = false; render(); fail(e); }
+}
+async function forgot() {
+  const email = document.getElementById('email').value.trim();
+  if (!email) return toast('Digite o seu e-mail acima e toque de novo em "Esqueci a senha".');
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if (error) return fail(error);
+  toast('Enviamos um link para ' + email + '. Abra no iPhone para criar a nova senha.');
+}
+async function savePass() {
+  const v = document.getElementById('np').value;
+  if (v.length < 6) return toast('A senha precisa de 6 ou mais caracteres.');
+  const { error } = await sb.auth.updateUser({ password: v });
+  if (error) return fail(error);
+  toast('Senha alterada!'); history.replaceState(null, '', location.pathname); await loadGarage();
+}
+
+// ---------------- Garagem ----------------
+async function loadGarage() {
+  await loadCatalog().catch(() => {});
+  const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
+  if (error) { S.view = 'garage'; S.projects = []; render(); return fail(error); }
+  S.projects = data; S.view = 'garage'; render();
+}
+function viewGarage() {
+  const cards = S.projects.map(p => {
+    const its = p.project_items || [], ex = p.project_expenses || [];
+    const t = its.length, d = its.filter(i => i.status === 'instalado').length;
+    const prev = sumBy(ex, e => e.valor_previsto), real = sumBy(ex, e => e.valor_realizado);
+    const ref = num(p.orcamento_total) || prev;
+    const pct = ref ? Math.min(100, Math.round(real / ref * 100)) : 0;
+    return `<button class="card pcard" data-open="${p.id}">
+      <div class="row between"><div class="row"><span class="dot" style="background:${esc(p.cor || '#9A2A2A')}"></span><h2>${esc(p.nome)}</h2></div><span class="tiny mut">${p.marcha === 6 ? 'Acerto fino' : p.marcha + 'ª marcha'}</span></div>
+      <span class="small mut">${esc(carLine(p))} · ${esc(goalName(p.objetivo))}</span>
+      ${segs(p.marcha)}
+      <div class="row between small"><span class="mut">${d} de ${t} itens instalados</span><span class="mut">Gasto <b style="color:var(--fg)">${brl(real)}</b>${ref ? ' de ' + brl(ref) : ''}</span></div>
+      <div class="bar ${ref && real > ref ? 'over' : ''}"><i style="width:${pct}%"></i></div>
+    </button>`;
+  }).join('');
+  return `
+  <div class="row between"><div class="brand">PREP<b>.PRO</b></div><div class="row" style="gap:16px">${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <h1>Minha garagem</h1>
+  ${S.projects.length ? cards : `
+    <div class="card hot">
+      <h2>Comece pelo Caminhãozinho</h2>
+      <p class="small mut">Cria o projeto da S10 4.3 V6 1998 já preenchido. Você só confere o diagnóstico.</p>
+      <button class="btn" id="preset">CRIAR O CAMINHÃOZINHO</button>
+    </div>`}
+  <button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>
+  ${S.projects.length ? bannerCard(bannerFor('garagem')) : ''}`;
+}
+
+// ---------------- Novo projeto (1ª e 2ª marchas) ----------------
+async function loadCars() { if (S.cars.length) return; const { data, error } = await sb.from('car_models').select('*').order('modelo'); if (error) return fail(error); S.cars = data || []; }
+async function startWizard(preset) {
+  await loadCars();
+  const s10 = S.cars.find(c => c.modelo === 'S10' && c.motor === '4.3 V6');
+  S.draft = preset
+    ? { nome: 'Caminhãozinho', objetivo: 'rua', orc: null, prazo: 1, tem_carro: true, car_model_id: s10?.id || null, ano: '1998', detalhe: 'Cabine simples · prata', checks: {} }
+    : { nome: '', objetivo: null, orc: null, prazo: 1, tem_carro: null, car_model_id: null, ano: '', detalhe: '', checks: {} };
+  S.pick = { brand: '', q: '' };
+  S.step = 1; S.view = 'wizard'; render();
+}
+function keepWiz() {
+  const d = S.draft; if (!d) return;
+  const n = document.getElementById('pnome'); if (n) d.nome = n.value;
+  const o = document.getElementById('porc'); if (o) d.orc = parseMoney(o.value);
+  const det = document.getElementById('det'); if (det) d.detalhe = det.value;
+  const a = document.getElementById('wano'); if (a) d.ano = a.value;
+}
+function carListHtml(selId) {
+  const q = (S.pick.q || '').toLowerCase().trim(), br = S.pick.brand || '';
+  const list = S.cars.filter(c => (!br || c.marca === br) && (!q || (carName(c) + ' ' + (c.aspiracao || '') + ' ' + (c.nota || '')).toLowerCase().includes(q)));
+  list.sort((a, b) => carName(a).localeCompare(carName(b)));
+  return list.map(c => `<button class="carrow ${selId === c.id ? 'on' : ''}" data-pickcar="${c.id}">
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><b>${esc(carName(c))}</b><span>${esc(c.nota || '')}</span></div>
+      <div style="text-align:right;flex:none"><b>${c.potencia_cv ? fmtNum(c.potencia_cv) + ' cv' : ''}</b><span style="display:block">${c.ano_ref ? 'ficha ' + c.ano_ref : ''}</span></div>
+    </button>`).join('')
+    + `<button class="carrow ${selId === null && S.view === 'wizard' && S.draft?.carOutro ? 'on' : ''}" data-pickcar=""><div><b>Outro / não está na lista</b><span style="display:block">Descreva nos detalhes</span></div></button>`;
+}
+function carPicker(selId) {
+  return `<div class="col">
+    <div class="chips">${['', ...BRANDS].map(b => `<button class="chip xs ${S.pick.brand === b ? 'on' : ''}" data-pickbrand="${b}">${b || 'Todas'}</button>`).join('')}</div>
+    <input id="carsearch" placeholder="Buscar: AP, Opala, turbo, V8…" value="${esc(S.pick.q)}" autocomplete="off">
+    <div class="carlist" id="carlist">${carListHtml(selId)}</div>
+  </div>`;
+}
+function viewWizard() {
+  const d = S.draft, n = S.step;
+  const head = `<div class="row"><button class="icon-btn" id="wback" aria-label="Voltar">${back}</button>
+    <div style="flex:1" class="col"><div class="row between small mut" style="gap:0"><span>${n}ª marcha · ${MARCHAS[n - 1]}</span><span>${n} de 5</span></div>${segs(n)}</div></div>`;
+  if (n === 1) return `${head}
+    <h1>Qual é o sonho?</h1>
+    <label class="f">Nome do projeto<input id="pnome" value="${esc(d.nome)}" placeholder="Ex.: Caminhãozinho"></label>
+    <div class="grid2">${GOALS.map(g => `<button class="opt ${d.objetivo === g[0] ? 'on' : ''}" data-goal="${g[0]}"><b>${g[1]}</b><span>${g[2]}</span></button>`).join('')}</div>
+    <label class="f">Quanto pretende investir no total? (R$)<input id="porc" inputmode="decimal" value="${esc(fmtIn(d.orc))}" placeholder="Ex.: 25.000"></label>
+    <div class="col"><b>Em quanto tempo?</b><div class="chips">${PRAZOS.map((b, i) => `<button class="chip ${d.prazo === i ? 'on' : ''}" data-praz="${i}">${b}</button>`).join('')}</div></div>
+    <button class="btn" id="w1" ${d.objetivo ? '' : 'disabled'}>ENGATAR A 2ª MARCHA</button>`;
+  return `${head}
+    <h1>O que você tem hoje?</h1>
+    <div class="grid2">
+      <button class="opt ${d.tem_carro === true ? 'on' : ''}" data-have="1"><b>Já tenho o carro</b><span>Vamos ao diagnóstico</span></button>
+      <button class="opt ${d.tem_carro === false ? 'on' : ''}" data-have="0"><b>Ainda não tenho</b><span>Escolha a base do sonho</span></button>
+    </div>
+    ${d.tem_carro === null ? '' : `
+    <div class="col"><b>${d.tem_carro ? 'Qual é o carro?' : 'Qual base você quer?'}</b>${carPicker(d.car_model_id)}</div>
+    <div class="money2">
+      <label class="f">Ano<input id="wano" inputmode="numeric" value="${esc(d.ano)}" placeholder="Ex.: 1998"></label>
+      <label class="f">Detalhes<input id="det" value="${esc(d.detalhe)}" placeholder="Versão, cor…"></label>
+    </div>
+    ${d.tem_carro ? `<div class="col"><div class="row between"><b>A base aguenta o sonho?</b><span class="tiny mut">opcional agora</span></div>
+      <div class="card" style="gap:0;padding:4px 14px">${checksFor(d.objetivo).map((h, i) => `<div class="item"><span class="nm">${h}</span><div class="has">${CHECK_OPTS.map(o => `<button class="${d.checks[h] === o[0] ? 'on' : ''}" data-wcheck="${i}|${o[0]}">${o[1]}</button>`).join('')}</div></div>`).join('')}</div>
+      <span class="tiny mut">"Revisar" e "Não sei" viram itens no Stage 0 do plano.</span></div>` : ''}
+    <button class="btn" id="w2" ${S.busy ? 'disabled' : ''}>GERAR MEU PLANO</button>`}`;
+}
+async function createProject() {
+  const d = S.draft;
+  S.busy = true; render();
+  try {
+    const { data: tpls, error: e1 } = await sb.from('templates').select('id,objetivos');
+    if (e1) throw e1;
+    if (!tpls?.length) throw new Error('Nenhum plano no catálogo. Rode o script do banco no Supabase.');
+    const tpl = tpls.find(t => (t.objetivos || []).includes(d.objetivo)) || tpls[0];
+    const { data: p, error: e2 } = await sb.from('projects').insert({
+      user_id: S.user.id, nome: d.nome || 'Meu projeto', objetivo: d.objetivo, orcamento_total: d.orc, orcamento: d.orc ? brl(d.orc) : null, prazo: PRAZOS[d.prazo],
+      tem_carro: !!d.tem_carro, car_model_id: d.car_model_id, template_id: tpl.id, marcha: 3, cor: COLORS[S.projects.length % COLORS.length],
+      ficha: { ano: d.ano ? +d.ano || d.ano : null, obs: d.detalhe || null }
+    }).select().single();
+    if (e2) throw e2;
+    const answered = Object.entries(d.tem_carro ? d.checks : {});
+    if (answered.length) {
+      const { error } = await sb.from('project_diagnostics').insert(answered.map(([item, status]) => ({ project_id: p.id, item, status })));
+      if (error) throw error;
+    }
+    const c = S.cars.find(x => x.id === d.car_model_id);
+    const inicio = [c ? carName(c) : null, d.ano, d.detalhe].filter(Boolean).join(' · ');
+    if (inicio) await sb.from('diary_entries').insert({ project_id: p.id, texto: 'Início do projeto: ' + inicio });
+    const { data: st, error: e3 } = await sb.from('template_stages').select('id,ordem,template_items(id)').eq('template_id', tpl.id);
+    if (e3) throw e3;
+    // todas as linhas com as mesmas colunas (o insert em lote exige)
+    const rows = st.flatMap(s => s.template_items.map(i => ({ project_id: p.id, template_item_id: i.id, stage_id: null, nome: null, origem: null, status: 'lista' })));
+    const s0 = st.find(s => s.ordem === 0) || st[0];
+    answered.filter(([, s]) => s !== 'ok').forEach(([item, s]) => rows.push({ project_id: p.id, template_item_id: null, stage_id: s0.id, nome: (s === 'verificar' ? 'Revisar: ' : 'Verificar: ') + item, origem: 'diag:' + item, status: 'lista' }));
+    if (rows.length) { const { error } = await sb.from('project_items').insert(rows); if (error) throw error; }
+    S.busy = false; toast('Plano gerado! Toque em qualquer marcha para avançar.');
+    S.phase = null; S.tab = 'marchas';
+    await openProject(p.id);
+  } catch (e) { S.busy = false; render(); fail(e); }
+}
+
+// ---------------- Projeto: dados e cálculos ----------------
+async function openProject(id, keepView) {
+  await loadCars();
+  S.pickOpen = false; S.pick = { brand: '', q: '' };
+  const [pr, it, dg, ps, cy, ex, cx] = await Promise.all([
+    sb.from('projects').select('*, car_models(*)').eq('id', id).single(),
+    sb.from('project_items').select('*').eq('project_id', id),
+    sb.from('project_diagnostics').select('*').eq('project_id', id),
+    sb.from('project_stages').select('*').eq('project_id', id),
+    sb.from('project_cycles').select('*').eq('project_id', id).order('numero'),
+    sb.from('project_expenses').select('*').eq('project_id', id).order('data', { ascending: false }),
+    sb.from('project_caixa').select('*').eq('project_id', id).order('criado_em', { ascending: false })
+  ]);
+  if (cx.error) toast('Falta rodar o script prep-pro-v5-migracao.sql no Supabase.');
+  if (pr.error) return fail(pr.error);
+  if (ex.error) toast('Falta rodar o script prep-pro-v3-migracao.sql no Supabase.');
+  const { data: stages, error } = await sb.from('template_stages').select('id,ordem,nome,quem_faz,e_legalizacao, template_items(id,ordem,nome)').eq('template_id', pr.data.template_id).order('ordem');
+  if (error) return fail(error);
+  stages.sort((a, b) => a.ordem - b.ordem);
+  stages.forEach(s => s.template_items.sort((a, b) => a.ordem - b.ordem));
+  const cycles = cy.data || [];
+  S.P = { p: pr.data, items: it.data || [], diag: dg.data || [], stages, pst: Object.fromEntries((ps.data || []).map(r => [r.stage_id, r])),
+    cycle: cycles.filter(c => !c.fechado_em).pop() || null, closed: cycles.filter(c => c.fechado_em).length, exp: ex.data || [], caixa: cx.data || [], diary: null };
+  if (!keepView) S.view = 'project';
+  if (!S.phase) S.phase = currentPhase();
+  render(); syncMarcha();
+  if (S.tab === 'diario') loadDiary();
+}
+function stageItems(s) {
+  const P = S.P, out = [];
+  s.template_items.forEach(ti => { const pi = P.items.find(i => i.template_item_id === ti.id); if (pi) out.push({ pi, nome: ti.nome }); });
+  P.items.filter(i => !i.template_item_id && i.stage_id === s.id).forEach(pi => out.push({ pi, nome: pi.nome || 'Item' }));
+  return out;
+}
+function itemName(pi) { if (!pi) return ''; if (pi.nome) return pi.nome; for (const s of S.P.stages) { const t = s.template_items.find(t => t.id === pi.template_item_id); if (t) return t.nome; } return 'Item'; }
+function progress() {
+  const P = S.P, p = P.p, items = P.items, n = items.length || 1;
+  const work = P.stages.filter(s => !s.e_legalizacao), wN = work.length || 1, stN = P.stages.length || 1;
+  const f = p.ficha || {}, chk = checksFor(p.objetivo);
+  const answered = chk.filter(k => P.diag.some(d => d.item === k)).length;
+  const c = P.cycle;
+  return [
+    ((p.objetivo ? 1 : 0) + (num(p.orcamento_total) > 0 ? 1 : 0) + (p.prazo ? 1 : 0)) / 3,
+    p.tem_carro ? ((p.car_model_id || f.obs ? .25 : 0) + (f.ano ? .25 : 0) + answered / chk.length * .5) : (p.car_model_id ? 1 : 0),
+    work.filter(s => P.exp.some(e => e.stage_id === s.id)).length / wN,
+    P.stages.filter(s => (P.pst[s.id]?.quem_faz || '').trim()).length / stN,
+    items.filter(i => i.status === 'instalado').length / n,
+    c ? ((c.testes ? 1 : 0) + (c.regulagem ? 1 : 0) + (c.ajustes ? 1 : 0)) / 3 : (P.closed ? 1 : 0)
+  ];
+}
+function currentPhase() { const pr = progress(); const i = pr.findIndex(x => x < 0.999); return i < 0 ? 6 : i + 1; }
+function syncMarcha() {
+  if (!S.P) return; const m = currentPhase(), p = S.P.p;
+  if (p.marcha !== m) { p.marcha = m; sb.from('projects').update({ marcha: m }).eq('id', p.id).then(({ error }) => error && console.error(error)); }
+}
+function money(list) { list = list || S.P.exp; return { prev: sumBy(list, e => e.valor_previsto), real: sumBy(list, e => e.valor_realizado), total: num(S.P.p.orcamento_total) }; }
+function stageExp(stageId) { return S.P.exp.filter(e => (e.stage_id || null) === (stageId || null)); }
+
+// ---------------- Projeto: telas ----------------
+function gearSvg() {
+  const pr = progress(), cur = currentPhase(), sel = S.tab === 'marchas' ? S.phase : null;
+  const pos = { 1: [60, 52], 2: [60, 162], 3: [170, 52], 4: [170, 162], 5: [280, 52], 6: [280, 162] };
+  const R = 24, C = 2 * Math.PI * R;
+  let knobs = '';
+  for (let n = 1; n <= 6; n++) {
+    const [x, y] = pos[n], f = pr[n - 1], done = f >= 0.999;
+    const col = done ? '#3DBE7A' : f > 0 ? '#FF6A1F' : '#3A3E45';
+    const isSel = n === sel, top = y < 100;
+    knobs += `<g data-phase="${n}" role="button" aria-label="${n === 6 ? 'Acerto fino' : n + 'ª marcha'}: ${Math.round(f * 100)}%">
+      <circle cx="${x}" cy="${y}" r="33" fill="${isSel ? '#2A1A10' : '#1A1C20'}" stroke="${isSel ? '#F2EFEA' : '#2A2D33'}" stroke-width="${isSel ? 2.5 : 1.5}"/>
+      <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#2A2D33" stroke-width="5"/>
+      <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${(f * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${x} ${y})"/>
+      <text x="${x}" y="${y + 6}" text-anchor="middle" font-family="Barlow Condensed, Barlow, system-ui, sans-serif" font-weight="800" font-size="${n === 6 ? 16 : 19}" fill="${done ? '#7FE0A8' : '#F2EFEA'}">${n === 6 ? 'AF' : n + 'ª'}</text>
+      <text x="${x}" y="${top ? y - 40 : y + 50}" text-anchor="middle" font-family="Barlow, system-ui, sans-serif" font-weight="600" font-size="12" fill="${n === cur ? '#FF8A4C' : '#A7AAB0'}">${SHORT[n - 1]}${n === cur ? ' ●' : ''}</text>
+    </g>`;
+  }
+  return `<svg viewBox="0 0 340 222" aria-label="Câmbio das 5 marchas"><path d="M60 52 V162 M170 52 V162 M280 52 V162 M60 107 H280" stroke="#2A2D33" stroke-width="8" stroke-linecap="round" fill="none"/>${knobs}</svg>`;
+}
+function moneyStrip() {
+  const m = money(), ref = m.total || m.prev, pct = ref ? Math.min(100, Math.round(m.real / ref * 100)) : 0, over = ref && m.real > ref;
+  return `<div class="row between small"><span class="mut">Gasto <b style="color:var(--fg)">${brl(m.real)}</b>${ref ? ' de ' + brl(ref) : ''}</span><button class="link" data-tab="gastos" style="padding:0">Previsto x realizado ›</button></div>
+    <div class="bar ${over ? 'over' : ''}"><i style="width:${pct}%"></i></div>`;
+}
+function viewProject() {
+  const { p } = S.P;
+  return `
+  <div class="row"><button class="icon-btn" id="pback" aria-label="Voltar para a garagem">${back}</button>
+    <div class="col" style="gap:2px;flex:1;min-width:0"><h1 style="font-size:30px">${esc(p.nome)}</h1><span class="small mut">${esc(carLine(p))} · ${esc(goalName(p.objetivo))}</span></div></div>
+  <div class="gear" id="gear">${gearSvg()}</div>
+  <div class="col" id="money" style="gap:6px">${moneyStrip()}</div>
+  <div class="tabs"><button class="${S.tab === 'marchas' ? 'on' : ''}" data-tab="marchas">Marcha</button><button class="${S.tab === 'gastos' ? 'on' : ''}" data-tab="gastos">Gastos</button><button class="${S.tab === 'diario' ? 'on' : ''}" data-tab="diario">Diário</button></div>
+  ${S.tab === 'marchas' ? viewPhase() : S.tab === 'gastos' ? viewGastos() : viewDiary()}`;
+}
+function phaseHead() {
+  const n = S.phase, f = progress()[n - 1];
+  const hint = ['Defina o sonho, o orçamento total e o prazo.', 'Conheça o ponto de partida antes de gastar.', 'Monte o plano: itens de cada stage e quanto prevê gastar.', 'Escolha quem faz cada stage, ou se é você mesmo.', 'Marque o que comprou e instalou e lance o que pagou.', 'Teste, regule e ajuste. Depois, o próximo stage volta para a 3ª.'][n - 1];
+  return `<div class="row between"><h2>${n === 6 ? 'Acerto fino' : n + 'ª marcha · ' + MARCHAS[n - 1]}</h2><span class="small" style="color:${f >= 0.999 ? 'var(--ok2)' : 'var(--mut)'}">${Math.round(f * 100)}%</span></div><p class="small mut">${hint}</p>`;
+}
+function viewPhase() {
+  const n = S.phase, P = S.P, p = P.p;
+  let body = '';
+  if (n === 1) {
+    body = `<div class="card">
+      <label class="f">Nome do projeto<input id="pname" value="${esc(p.nome)}" data-pname="${p.id}"></label>
+      <b>Objetivo</b>
+      <div class="chips">${GOALS.map(g => `<button class="chip xs ${p.objetivo === g[0] ? 'on' : ''}" data-pgoal="${g[0]}">${g[1]}</button>`).join('')}</div>
+      <label class="f">Orçamento total deste projeto (R$)<input id="porc1" inputmode="decimal" placeholder="Ex.: 40.000" data-porc="${p.id}" value="${esc(fmtIn(p.orcamento_total))}"></label>
+      <div class="money2">
+        <label class="f">Guardado hoje (R$)<input id="caixa1" inputmode="decimal" placeholder="Ex.: 5.000" value="${p.caixa_desde ? esc(fmtIn(caixaCalc().saldo)) : ''}"></label>
+        <label class="f">Guardo por mês (R$)<input id="aporte1" inputmode="decimal" placeholder="Ex.: 1.500" value="${esc(fmtIn(p.aporte_mensal))}"></label>
+      </div>
+      <span class="tiny mut">Viram a Caixinha do projeto, na aba Gastos: ela mostra quando cada stage fica pago.</span>
+      <b>Prazo</b>
+      <div class="chips">${PRAZOS.map(b => `<button class="chip xs ${p.prazo === b ? 'on' : ''}" data-pprazo="${esc(b)}">${b}</button>`).join('')}</div>
+      <button class="btn" id="save1">SALVAR</button>
+    </div>
+    <div class="row" style="justify-content:center"><button class="link" id="delproj" style="color:var(--bad);font-weight:500;font-size:13px">Excluir projeto</button></div>`;
+  } else if (n === 2) {
+    body = viewPartida();
+  } else if (n === 6) {
+    const c = P.cycle || {};
+    body = `<div class="card">
+      <span class="small mut">Ciclo ${c.numero || P.closed + 1}${P.closed ? ' · ' + P.closed + ' já fechado' + (P.closed > 1 ? 's' : '') : ''}</span>
+      ${[['testes', 'Testes', 'Rodagem, dinamômetro, datalog'], ['regulagem', 'Regulagem', 'Mapa, pressão, ponto'], ['ajustes', 'Ajustes', 'Corrigir o que o teste mostrou']].map(x => `<button class="opt ${c[x[0]] ? 'on' : ''}" data-cyc="${x[0]}"><b>${c[x[0]] ? '✓ ' : ''}${x[1]}</b><span>${x[2]}</span></button>`).join('')}
+      <button class="btn ghost sm" data-newexp="geral|mao_de_obra">+ Lançar gasto (ex.: dinamômetro)</button>
+      <button class="btn" id="closecyc">FECHAR CICLO · PRÓXIMO STAGE</button>
+    </div>`;
+  } else {
+    body = P.stages.map(s => stageCard(s, n)).join('');
+  }
+  return `<div class="col">${phaseHead()}${body}</div>`;
+}
+// 2ª marcha · Ponto de partida: ficha do carro, a base aguenta?, o que já tenho
+function viewPartida() {
+  const P = S.P, p = P.p, c = p.car_models, f = p.ficha || {};
+  const spec = c ? `<div class="spec">
+      <div><span>Potência de fábrica</span><b>${c.potencia_cv ? fmtNum(c.potencia_cv) + ' cv' : '—'}</b></div>
+      <div><span>Torque</span><b>${c.torque_kgfm ? fmtNum(c.torque_kgfm) + ' kgfm' : '—'}</b></div>
+      <div><span>Cilindrada</span><b>${c.cilindrada_cm3 ? fmtNum(c.cilindrada_cm3) + ' cm³' : '—'}</b></div>
+      <div><span>Alimentação</span><b>${esc(c.alimentacao || '—')}</b></div>
+      <div><span>Tração</span><b>${esc(c.tracao || '—')}</b></div>
+      <div><span>Ficha de</span><b>${c.ano_ref || '—'}</b></div>
+    </div>${c.nota ? `<span class="tiny mut">${esc(c.nota)}</span>` : ''}` : '';
+  const ficha = `<div class="card">
+    <div class="row between"><b>${p.tem_carro ? 'O carro hoje' : 'A base do sonho'}</b>${c && !S.pickOpen ? '<button class="link" id="swapcar" style="padding:0">Trocar</button>' : ''}</div>
+    ${c && !S.pickOpen ? `<h2>${esc(carName(c))}</h2>${spec}` : carPicker(p.car_model_id)}
+    ${S.pickOpen && c ? '<button class="link" id="swapcar" style="padding:0">Cancelar</button>' : ''}
+    ${p.tem_carro ? `<div class="money2">
+      <label class="f">Ano<input inputmode="numeric" data-ficha="ano" value="${esc(f.ano ?? '')}" placeholder="Ex.: 1998"></label>
+      <label class="f">Km<input inputmode="numeric" data-ficha="km" value="${esc(f.km ?? '')}" placeholder="Ex.: 180000"></label>
+      <label class="f">Cor<input data-ficha="cor" value="${esc(f.cor ?? '')}" placeholder="Ex.: Prata"></label>
+      <label class="f">Potência hoje (cv)<input inputmode="numeric" data-ficha="cv_hoje" value="${esc(f.cv_hoje ?? '')}" placeholder="${c?.potencia_cv ? 'fábrica: ' + fmtNum(c.potencia_cv) : 'Ex.: 180'}"></label>
+    </div>
+    <div class="col" style="gap:6px"><span class="small mut">Câmbio</span><div class="chips">${['Manual', 'Automático'].map(x => `<button class="chip xs ${f.cambio === x ? 'on' : ''}" data-fichachip="cambio|${x}">${x}</button>`).join('')}</div></div>
+    <label class="f">Detalhes<input data-ficha="obs" value="${esc(f.obs ?? '')}" placeholder="Versão, cabine, o que já foi mexido…"></label>
+    <button class="btn" id="saveficha">SALVAR FICHA</button>`
+    : `<button class="btn ghost sm" id="gotcar">Comprei o carro! Fazer a ficha e o diagnóstico</button>`}
+  </div>`;
+  const map = Object.fromEntries(P.diag.map(d => [d.item, d.status]));
+  const base = p.tem_carro ? `<div class="card">
+    <b>A base aguenta o sonho?</b>
+    <span class="tiny mut">"Revisar" e "Não sei" viram itens automáticos no Stage 0 da 3ª marcha.</span>
+    <div style="display:flex;flex-direction:column">${checksFor(p.objetivo).map(h => `<div class="item"><span class="nm">${h}</span><div class="has">${CHECK_OPTS.map(o => `<button class="${map[h] === o[0] ? 'on' : ''}" data-check="${esc(h)}|${o[0]}">${o[1]}</button>`).join('')}</div></div>`).join('')}</div>
+  </div>` : '';
+  const tenho = `<div class="card">
+    <b>O que eu já tenho</b>
+    <span class="tiny mut">Marque o que já está no carro ou guardado. Isso sai da lista de compras.</span>
+    ${P.stages.filter(s => !s.e_legalizacao).map(s => `<div class="col" style="gap:0">
+      <span class="small" style="color:var(--acc2);font-weight:700;margin-top:6px">${esc(s.nome)}</span>
+      ${stageItems(s).filter(x => !x.pi.origem).map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><div class="has">${HAS_OPTS.map(o => `<button class="${(x.pi.ja_tenho || '') === o[0] ? 'on' : ''}" data-has="${x.pi.id}|${o[0]}">${o[1]}</button>`).join('')}</div></div>`).join('')}
+      <input class="add" data-addhave="${s.id}" placeholder="+ peça que eu já tenho neste stage" style="margin-top:6px">
+    </div>`).join('')}
+  </div>`;
+  return ficha + base + tenho;
+}
+function itemBadges(pi) {
+  return (pi.ja_tenho ? `<span class="badge">${pi.ja_tenho === 'no_carro' ? 'já no carro' : 'já tenho'}</span>` : '') + (pi.origem ? '<span class="auto">da 2ª marcha</span>' : '');
+}
+function stageCard(s, n) {
+  const P = S.P, st = P.pst[s.id] || {};
+  if (n === 4) {
+    return `<div class="card">
+      <div class="row between"><b>${esc(s.nome)}</b><span class="tiny mut">sugestão: ${esc(s.quem_faz || '—')}</span></div>
+      <input class="who" data-who="${s.id}" value="${esc(st.quem_faz || '')}" placeholder="Nome da oficina ou do profissional">
+      <div class="chips"><button class="chip xs ${st.quem_faz === 'Eu mesmo' ? 'on' : ''}" data-self="${s.id}">Eu mesmo</button></div>
+      ${s.e_legalizacao ? '<div class="legal">Vistoria em ITL credenciada pelo Inmetro, depois da autorização do Detran.</div>' : ''}
+    </div>`;
+  }
+  const rows = stageItems(s), m = money(stageExp(s.id));
+  return `<div class="card">
+    <div class="row between"><b>${esc(s.nome)}</b><span class="tiny mut">${n === 3 ? 'Previsto ' + brl(m.prev) : 'Pago ' + brl(m.real) + (m.prev ? ' de ' + brl(m.prev) : '')}</span></div>
+    <div style="display:flex;flex-direction:column">
+      ${rows.map(x => `<div class="item">
+        <span class="nm" style="${x.pi.ja_tenho && n === 3 ? 'color:var(--mut)' : ''}">${esc(x.nome)}${itemBadges(x.pi)}${offerBtn(x)}</span>
+        ${n === 5 ? `<button class="pill st-${x.pi.status}" data-item="${x.pi.id}">${s.e_legalizacao && x.pi.status !== 'lista' ? (x.pi.status === 'instalado' ? 'Concluído' : 'Pago') : ST_LABEL[x.pi.status]}</button>`
+                  : `<button class="x ${armed('it' + x.pi.id) ? 'armed' : ''}" data-delitem="${x.pi.id}" aria-label="Remover ${esc(x.nome)}">${armed('it' + x.pi.id) ? 'Remover?' : '×'}</button>`}
+      </div>`).join('')}
+    </div>
+    ${n === 3 ? `<input class="add" data-additem="${s.id}" placeholder="+ adicionar item (Enter para salvar)">` : ''}
+    <button class="btn ghost sm" data-newexp="${s.id}|${n === 3 ? 'prev' : 'real'}">${n === 3 ? '+ Previsto neste stage' : '+ Lançar gasto neste stage'}</button>
+    ${bannerCard(bannerFor('stage', s.ordem))}
+    ${s.e_legalizacao && n === 3 ? '<div class="legal">Mexeu em potência, suspensão ou combustível: autorização prévia do Detran e CSV emitido por ITL credenciada pelo Inmetro.</div>' : ''}
+  </div>`;
+}
+
+// ---------------- Gastos ----------------
+function viewGastos() {
+  const P = S.P, m = money(), saldo = m.total - m.real, ref = m.total || m.prev;
+  const kpis = `<div class="kpis">
+    <div class="kpi"><span>Orçamento do projeto</span><b>${m.total ? brl(m.total) : '—'}</b></div>
+    <div class="kpi"><span>Previsto</span><b>${brl(m.prev)}</b></div>
+    <div class="kpi"><span>Realizado</span><b style="color:${ref && m.real > ref ? 'var(--bad)' : 'var(--fg)'}">${brl(m.real)}</b></div>
+    <div class="kpi"><span>Saldo do orçamento</span><b style="color:${!m.total ? 'var(--mut)' : saldo < 0 ? 'var(--bad)' : 'var(--ok2)'}">${m.total ? brl(saldo) : '—'}</b></div>
+  </div>`;
+  const alerts = (!m.total ? `<button class="card pcard" data-goto="1"><b>Defina o orçamento total</b><span class="small mut">Na 1ª marcha. Assim aparece o saldo.</span></button>` : '')
+    + (m.total && m.real > m.total ? `<div class="warnbox">O realizado passou ${brl(m.real - m.total)} do orçamento.</div>` : '')
+    + (m.total && m.prev > m.total ? `<div class="warnbox">O previsto está ${brl(m.prev - m.total)} acima do orçamento.</div>` : '');
+  let body = '';
+  if (S.gview === 'lista') {
+    body = P.exp.length ? `<div class="card" style="gap:0;padding:4px 14px">${P.exp.map(e => {
+      const s = P.stages.find(x => x.id === e.stage_id);
+      const real = e.valor_realizado !== null && e.valor_realizado !== undefined;
+      return `<button class="exp" data-exp="${e.id}">
+        <div class="d"><b>${tag(e.tipo)}${esc(e.descricao)}</b><span>${esc(e.fornecedor || '—')} · ${esc(shortStage(s))} · ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span></div>
+        <div class="v"><b style="${real ? '' : 'color:var(--mut);font-style:italic'}">${real ? brl2(e.valor_realizado) : brl2(e.valor_previsto)}</b><span>${real ? (e.valor_previsto ? 'prev. ' + brl(e.valor_previsto) : 'realizado') : 'previsto'}</span></div>
+      </button>`;
+    }).join('')}</div>
+    <div class="row between"><span class="small mut">${P.exp.length} lançamentos · total realizado <b style="color:var(--fg)">${brl2(m.real)}</b></span><button class="link" id="copytsv">Copiar como planilha</button></div>`
+      : `<div class="card"><b>Nenhum gasto lançado ainda</b><span class="small mut">Lance peças, mão de obra, fretes e serviços. Previsto é o que você planeja gastar; realizado, o que já pagou.</span></div>`;
+  } else if (S.gview === 'graficos') {
+    body = viewGraficos();
+  } else if (S.gview === 'stage') {
+    const groups = [{ id: null, nome: 'Geral' }].concat(P.stages.map(s => ({ id: s.id, nome: s.nome })));
+    body = `<div class="card"><div class="row between"><b>Por stage</b><span class="tiny mut"><span style="color:#8C9096">■</span> previsto · <span style="color:var(--ok)">■</span> realizado</span></div>
+      ${groups.map(g => { const sm = money(stageExp(g.id)); if (!sm.prev && !sm.real && g.id === null) return ''; const max = Math.max(sm.prev, sm.real, 1), over = sm.prev && sm.real > sm.prev;
+        return `<div class="col" style="gap:5px"><div class="row between small"><b>${esc(g.nome)}</b><span style="color:${over ? 'var(--bad)' : 'var(--mut)'}">${brl(sm.real)} / ${brl(sm.prev)}</span></div>
+          <div class="bar plan"><i style="width:${Math.round(sm.prev / max * 100)}%"></i></div><div class="bar ${over ? 'over' : 'ok'}"><i style="width:${Math.round(sm.real / max * 100)}%"></i></div></div>`; }).join('')}</div>`;
+  } else if (S.gview === 'caixa') {
+    body = viewCaixa();
+  } else {
+    const tot = m.real || 1;
+    body = `<div class="card"><b>Por tipo (realizado)</b>${Object.keys(TIPOS).map(t => { const tm = money(P.exp.filter(e => e.tipo === t)); if (!tm.real && !tm.prev) return '';
+      return `<div class="col" style="gap:5px"><div class="row between small"><span>${tag(t)}</span><span><b>${brl(tm.real)}</b> <span class="mut">· ${Math.round(tm.real / tot * 100)}%${tm.prev ? ' · prev. ' + brl(tm.prev) : ''}</span></span></div><div class="bar ok"><i style="width:${Math.round(tm.real / tot * 100)}%"></i></div></div>`; }).join('')}</div>`;
+  }
+  return `<div class="col">${kpis}${alerts}
+    <div class="tabs sub"><button class="${S.gview === 'lista' ? 'on' : ''}" data-gview="lista">Lista</button><button class="${S.gview === 'graficos' ? 'on' : ''}" data-gview="graficos">Gráficos</button><button class="${S.gview === 'caixa' ? 'on' : ''}" data-gview="caixa">Caixinha</button></div>
+    ${body}
+    ${S.gview === 'lista' ? bannerCard(bannerFor('gastos')) : ''}
+    <button class="btn fab" data-newexp="geral|real">+ LANÇAR GASTO</button></div>`;
+}
+function copyTsv() {
+  const P = S.P, lines = [['Tipo', 'Descrição', 'Previsto', 'Realizado', 'Onde / quem', 'Stage', 'Data'].join('\t')];
+  P.exp.forEach(e => { const s = P.stages.find(x => x.id === e.stage_id); lines.push([TIPOS[e.tipo], e.descricao, fmtIn(e.valor_previsto), fmtIn(e.valor_realizado), e.fornecedor || '', shortStage(s), new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR')].join('\t')); });
+  const m = money(); lines.push(['', 'Total', fmtIn(m.prev), fmtIn(m.real), '', '', ''].join('\t'));
+  navigator.clipboard.writeText(lines.join('\n')).then(() => toast('Copiado! Cole no Excel ou no Google Planilhas.'), () => toast('Não consegui copiar neste aparelho.'));
+}
+
+// ---------------- Formulário de gasto ----------------
+function openForm(e, preset) {
+  const P = S.P;
+  if (e) S.form = { id: e.id, tipo: e.tipo, descricao: e.descricao, fornecedor: e.fornecedor || '', stage_id: e.stage_id, project_item_id: e.project_item_id, prev: e.valor_previsto, real: e.valor_realizado, data: e.data, focus: e.valor_realizado !== null && e.valor_realizado !== undefined ? 'real' : 'prev' };
+  else {
+    const [st, mode] = (preset || 'geral|real').split('|');
+    S.form = { id: null, tipo: mode === 'mao_de_obra' ? 'mao_de_obra' : 'peca', descricao: '', fornecedor: '', stage_id: st === 'geral' ? null : st, project_item_id: null, prev: null, real: null, data: today(), focus: mode === 'prev' ? 'prev' : 'real' };
+  }
+  S.formBack = S.tab; S.view = 'expense'; S.armed = null; render(); window.scrollTo(0, 0);
+}
+function keepForm() {
+  const f = S.form; if (!f) return;
+  const g = id => document.getElementById(id);
+  if (g('fdesc')) f.descricao = g('fdesc').value;
+  if (g('fforn')) f.fornecedor = g('fforn').value;
+  if (g('fprev')) f.prev = parseMoney(g('fprev').value);
+  if (g('freal')) f.real = parseMoney(g('freal').value);
+  if (g('fdata')) f.data = g('fdata').value || today();
+  if (g('fitem')) f.project_item_id = g('fitem').value || null;
+}
+function viewForm() {
+  const f = S.form, P = S.P;
+  const forn = [...new Set(P.exp.map(e => e.fornecedor).filter(Boolean))];
+  const st = P.stages.find(s => s.id === f.stage_id);
+  const items = st ? stageItems(st) : [];
+  return `<div class="row"><button class="icon-btn" id="fback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">${f.id ? 'Editar gasto' : 'Lançar gasto'}</h1></div>
+  <span class="small mut">${esc(P.p.nome)}</span>
+  <div class="col"><b>Tipo</b><div class="chips">${Object.keys(TIPOS).map(t => `<button class="chip xs ${f.tipo === t ? 'on' : ''}" data-ftipo="${t}">${TIPOS[t]}</button>`).join('')}</div></div>
+  <label class="f">Descrição<input id="fdesc" value="${esc(f.descricao)}" placeholder="Ex.: Turbina ZR .70 Black"></label>
+  <label class="f">Onde / quem<input id="fforn" list="fornlist" value="${esc(f.fornecedor)}" placeholder="Ex.: ML, RS Performance, Betinho"><datalist id="fornlist">${forn.map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
+  <div class="money2">
+    <label class="f">Previsto (R$)<input id="fprev" inputmode="decimal" value="${esc(fmtIn(f.prev))}" placeholder="opcional"></label>
+    <label class="f">Realizado (R$)<input id="freal" inputmode="decimal" value="${esc(fmtIn(f.real))}" placeholder="quanto pagou"></label>
+  </div>
+  <div class="col"><b>Stage</b><div class="chips"><button class="chip xs ${!f.stage_id ? 'on' : ''}" data-fstage="">Geral</button>${P.stages.map(s => `<button class="chip xs ${f.stage_id === s.id ? 'on' : ''}" data-fstage="${s.id}">${esc(shortStage(s))}</button>`).join('')}</div></div>
+  ${items.length ? `<label class="f">Item do plano (opcional)<select id="fitem"><option value="">— nenhum —</option>${items.map(x => `<option value="${x.pi.id}" ${f.project_item_id === x.pi.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}</select></label>` : ''}
+  <label class="f">Data<input id="fdata" type="date" value="${esc(f.data)}"></label>
+  <button class="btn" id="fsave" ${S.busy ? 'disabled' : ''}>${f.id ? 'SALVAR' : 'LANÇAR'}</button>
+  ${f.id ? `<button class="btn danger ${armed('delexp') ? 'armed' : ''}" id="fdel">${armed('delexp') ? 'Toque de novo para excluir' : 'Excluir lançamento'}</button>` : ''}`;
+}
+async function saveExpense() {
+  keepForm(); const f = S.form, P = S.P;
+  if (!f.descricao.trim()) return toast('Escreva a descrição do gasto.');
+  if (f.prev === null && f.real === null) return toast('Preencha o valor previsto, o realizado ou os dois.');
+  const row = { project_id: P.p.id, stage_id: f.stage_id || null, project_item_id: f.project_item_id || null, tipo: f.tipo, descricao: f.descricao.trim(), fornecedor: f.fornecedor.trim() || null, valor_previsto: f.prev, valor_realizado: f.real, data: f.data || today() };
+  S.busy = true; render();
+  try {
+    if (f.id) {
+      const { data, error } = await sb.from('project_expenses').update(row).eq('id', f.id).select().single(); if (error) throw error;
+      P.exp = P.exp.map(e => e.id === f.id ? data : e);
+    } else {
+      const { data, error } = await sb.from('project_expenses').insert(row).select().single(); if (error) throw error;
+      P.exp.unshift(data);
+    }
+    P.exp.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+    if (row.project_item_id && row.valor_realizado !== null) {
+      const it = P.items.find(i => i.id === row.project_item_id);
+      if (it && it.status === 'lista') { it.status = 'comprado'; it.comprado_em = new Date().toISOString(); await sb.from('project_items').update({ status: 'comprado', comprado_em: it.comprado_em }).eq('id', it.id); }
+    }
+    S.busy = false; S.view = 'project'; S.tab = S.formBack || 'gastos'; S.form = null; render(); syncMarcha();
+    toast(f.id ? 'Lançamento atualizado.' : 'Gasto lançado!');
+  } catch (e) { S.busy = false; render(); fail(e); }
+}
+async function deleteExpense() {
+  if (!arm('delexp')) return;
+  const f = S.form, P = S.P;
+  const { error } = await sb.from('project_expenses').delete().eq('id', f.id);
+  if (error) return fail(error);
+  P.exp = P.exp.filter(e => e.id !== f.id);
+  S.view = 'project'; S.tab = S.formBack || 'gastos'; S.form = null; render(); syncMarcha(); toast('Lançamento excluído.');
+}
+
+// ---------------- Projeto: ações ----------------
+async function saveProj(patch) {
+  Object.assign(S.P.p, patch);
+  const { error } = await sb.from('projects').update(patch).eq('id', S.P.p.id);
+  if (error) fail(error);
+}
+async function saveStage(stageId, patch) {
+  const cur = S.P.pst[stageId] || {};
+  S.P.pst[stageId] = Object.assign({}, cur, patch, { stage_id: stageId });
+  const { data, error } = await sb.from('project_stages').upsert(Object.assign({ project_id: S.P.p.id, stage_id: stageId }, patch), { onConflict: 'project_id,stage_id' }).select().single();
+  if (error) return fail(error);
+  S.P.pst[stageId] = data;
+}
+async function cycleItem(id) {
+  const it = S.P.items.find(i => i.id === id); if (!it) return;
+  const next = ST_NEXT[it.status], now = new Date().toISOString();
+  const patch = { status: next, comprado_em: next === 'lista' ? null : (it.comprado_em || now), instalado_em: next === 'instalado' ? now : null };
+  Object.assign(it, patch); render(); syncMarcha();
+  const { error } = await sb.from('project_items').update(patch).eq('id', id);
+  if (error) fail(error);
+}
+async function addItem(stageId, nome) {
+  nome = nome.trim(); if (!nome) return;
+  const { data, error } = await sb.from('project_items').insert({ project_id: S.P.p.id, stage_id: stageId, nome }).select().single();
+  if (error) return fail(error);
+  S.P.items.push(data); render(); syncMarcha();
+  const el = document.querySelector(`[data-additem="${stageId}"]`); if (el) el.focus();
+}
+async function delItem(id) {
+  if (!arm('it' + id)) return;
+  const { error } = await sb.from('project_items').delete().eq('id', id);
+  if (error) return fail(error);
+  S.P.items = S.P.items.filter(i => i.id !== id);
+  S.P.exp.forEach(e => { if (e.project_item_id === id) e.project_item_id = null; });
+  render(); syncMarcha();
+}
+function deleteProject() {
+  const p = S.P.p, nEx = S.P.exp.length;
+  S.modal = { title: `Excluir "${p.nome}"?`, text: `Isso apaga para sempre o plano, ${nEx} lançamento${nEx === 1 ? '' : 's'} de gasto, o diário e as fotos deste projeto. Não dá para desfazer.`, ok: 'Sim, excluir',
+    run: async () => {
+      const { error } = await sb.from('projects').delete().eq('id', p.id);
+      if (error) return fail(error);
+      S.P = null; toast('Projeto excluído.'); await loadGarage();
+    } };
+  render();
+}
+// Atualiza um projeto pelo id que veio do próprio campo (evita gravar no projeto errado)
+async function saveProjById(pid, patch) {
+  if (S.P && S.P.p.id === pid) Object.assign(S.P.p, patch);
+  const { error } = await sb.from('projects').update(patch).eq('id', pid);
+  if (error) { fail(error); return false; }
+  return true;
+}
+async function saveFase1() {
+  const p = S.P.p, pid = p.id, nome = (document.getElementById('pname')?.value || '').trim();
+  const v = parseMoney(document.getElementById('porc1')?.value);
+  const patch = Object.assign(nome ? { nome } : {}, { orcamento_total: v, orcamento: v ? brl(v) : null }, caixaPatch());
+  const ok = await saveProjById(pid, patch);
+  if (ok) { render(); syncMarcha(); toast('Salvo ✓'); }
+}
+// "Guardado hoje" só reinicia a caixinha se o valor mudou; "por mês" é a meta de aporte
+function caixaPatch() {
+  const p = S.P.p, patch = {};
+  const ce = document.getElementById('caixa1'), ae = document.getElementById('aporte1');
+  if (ae) patch.aporte_mensal = parseMoney(ae.value);
+  if (ce) {
+    const v = parseMoney(ce.value), atual = p.caixa_desde ? caixaCalc().saldo : null;
+    if (v !== null && (atual === null || Math.abs(v - atual) > 0.009)) { patch.caixa_inicial = v; patch.caixa_desde = new Date().toISOString(); }
+    if (v === null && p.caixa_desde) { patch.caixa_inicial = null; patch.caixa_desde = null; }
+  }
+  return patch;
+}
+// ---------------- Caixinha ----------------
+const GRUPO = { peca: 'pecas', frete: 'pecas', mao_de_obra: 'mo', servico: 'mo', outro: 'outros' };
+function addMonths(n) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + n); return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).replace('.', ''); }
+function caixaCalc() {
+  const P = S.P, p = P.p, desde = p.caixa_desde ? new Date(p.caixa_desde) : null;
+  const movs = desde ? P.caixa.filter(c => new Date(c.criado_em) >= desde) : P.caixa;
+  const inicio = desde || (P.caixa.length ? new Date(Math.min(...P.caixa.map(c => +new Date(c.criado_em)))) : null);
+  const entradas = sumBy(movs, c => c.valor);
+  const gastos = inicio ? sumBy(P.exp.filter(e => e.valor_realizado !== null && e.valor_realizado !== undefined && new Date(e.criado_em) >= inicio), e => e.valor_realizado) : 0;
+  const saldo = num(p.caixa_inicial) + entradas - gastos;
+  const pend = P.exp.filter(e => (e.valor_realizado === null || e.valor_realizado === undefined) && num(e.valor_previsto) > 0);
+  const real = sumBy(P.exp, e => e.valor_realizado);
+  const faltaPrev = sumBy(pend, e => e.valor_previsto);
+  const usaOrc = !faltaPrev && num(p.orcamento_total) > 0;
+  const falta = faltaPrev || Math.max(num(p.orcamento_total) - real, 0);
+  const grupos = { pecas: 0, mo: 0, outros: 0 }; pend.forEach(e => grupos[GRUPO[e.tipo] || 'outros'] += num(e.valor_previsto));
+  const ap = num(p.aporte_mensal), precisa = Math.max(falta - Math.max(saldo, 0), 0);
+  const meses = precisa === 0 ? 0 : ap > 0 ? Math.ceil(precisa / ap) : null;
+  // linha do tempo: stages em ordem, cada um entra quando a caixinha acumulada cobre o que falta até ele
+  let acum = 0;
+  const linha = [{ id: null, nome: 'Geral' }].concat(P.stages.map(s => ({ id: s.id, nome: s.nome }))).map(g => {
+    const f = sumBy(pend.filter(e => (e.stage_id || null) === g.id), e => e.valor_previsto);
+    if (!f) return null;
+    acum += f; const need = Math.max(acum - Math.max(saldo, 0), 0);
+    return { nome: g.nome, falta: f, mes: need === 0 ? 0 : ap > 0 ? Math.ceil(need / ap) : null };
+  }).filter(Boolean);
+  return { saldo, entradas, gastos, movs, falta, usaOrc, grupos, ap, precisa, meses, linha, inicio };
+}
+function viewCaixa() {
+  const P = S.P, p = P.p, c = caixaCalc();
+  if (!p.caixa_desde && !P.caixa.length && !num(p.aporte_mensal)) {
+    return `<button class="card pcard" data-goto="1"><b>Monte a caixinha do projeto</b><span class="small mut">Na 1ª marcha, informe quanto já tem guardado e quanto consegue guardar por mês. O app mostra quando cada stage fica pago.</span></button>`;
+  }
+  const quando = c.meses === 0 ? 'Já dá para pagar tudo o que falta' : c.meses === null ? 'Informe quanto guarda por mês na 1ª marcha' : `Tudo pago em ${c.meses} ${c.meses === 1 ? 'mês' : 'meses'} · ${addMonths(c.meses)}`;
+  return `<div class="card hot">
+      <div class="row between"><b>Caixinha do projeto</b><span class="tiny mut">${c.ap ? 'guarda ' + brl(c.ap) + '/mês' : 'sem meta mensal'}</span></div>
+      <div class="kpis">
+        <div class="kpi"><span>Saldo na caixinha</span><b style="color:${c.saldo < 0 ? 'var(--bad)' : 'var(--ok2)'}">${brl(c.saldo)}</b></div>
+        <div class="kpi"><span>Falta pagar${c.usaOrc ? ' (pelo orçamento)' : ''}</span><b>${brl(c.falta)}</b></div>
+      </div>
+      <p class="small" style="font-weight:600">${quando}</p>
+      ${c.falta && !c.usaOrc ? `<span class="tiny mut">Falta em peças ${brl(c.grupos.pecas)} · mão de obra ${brl(c.grupos.mo)}${c.grupos.outros ? ' · outros ' + brl(c.grupos.outros) : ''}</span>` : ''}
+      ${c.usaOrc ? '<span class="tiny mut">Lance os valores previstos (3ª marcha) para ver a conta por stage.</span>' : ''}
+    </div>
+    ${c.linha.length ? `<div class="card"><b>Quando cada parte fica paga</b>
+      ${c.linha.map(l => `<div class="item"><span class="nm">${esc(l.nome)}<br><span class="tiny mut">falta ${brl(l.falta)}</span></span><span class="small" style="font-weight:700;color:${l.mes === 0 ? 'var(--ok2)' : 'var(--fg)'};text-align:right">${l.mes === 0 ? 'Já dá' : l.mes === null ? '—' : 'em ' + l.mes + (l.mes === 1 ? ' mês' : ' meses') + '<br><span class="tiny mut">' + addMonths(l.mes) + '</span>'}</span></div>`).join('')}
+      <span class="tiny mut">Na ordem dos stages, usando o saldo de hoje mais o que você guarda por mês.</span>
+    </div>` : ''}
+    <div class="card">
+      <b>Movimentar a caixinha</b>
+      <div class="money2"><label class="f">Valor (R$)<input id="cxval" inputmode="decimal" placeholder="Ex.: 1.500"></label><label class="f">Descrição<input id="cxdesc" placeholder="Ex.: Guardei em novembro"></label></div>
+      <div class="grid2"><button class="btn sm" data-cx="in" style="width:100%">+ Guardar</button><button class="btn ghost sm" data-cx="out" style="width:100%">− Tirar</button></div>
+      <span class="tiny mut">Gastos realizados que você lança saem da caixinha automaticamente.</span>
+    </div>
+    <div class="card" style="gap:0;padding:4px 14px">
+      ${c.movs.map(m => `<div class="item"><span class="nm">${esc(m.descricao || (m.valor >= 0 ? 'Guardei' : 'Tirei'))}<br><span class="tiny mut">${new Date(m.data + 'T12:00:00').toLocaleDateString('pt-BR')}</span></span><b style="color:${m.valor >= 0 ? 'var(--ok2)' : 'var(--bad)'}">${m.valor >= 0 ? '+' : '−'} ${brl2(Math.abs(m.valor))}</b><button class="x ${armed('cx' + m.id) ? 'armed' : ''}" data-delcx="${m.id}" aria-label="Apagar movimento">${armed('cx' + m.id) ? 'Apagar?' : '×'}</button></div>`).join('')}
+      ${p.caixa_desde ? `<div class="item"><span class="nm">Guardado no início<br><span class="tiny mut">${new Date(p.caixa_desde).toLocaleDateString('pt-BR')}</span></span><b>${brl2(num(p.caixa_inicial))}</b><span style="width:32px"></span></div>` : ''}
+      ${c.gastos ? `<div class="item"><span class="nm">Gastos realizados desde então</span><b style="color:var(--bad)">− ${brl2(c.gastos)}</b><span style="width:32px"></span></div>` : ''}
+    </div>`;
+}
+async function moveCaixa(dir) {
+  const v = parseMoney(document.getElementById('cxval')?.value), desc = (document.getElementById('cxdesc')?.value || '').trim();
+  if (!v || v <= 0) return toast('Digite o valor.');
+  const P = S.P, row = { project_id: P.p.id, valor: dir === 'out' ? -v : v, descricao: desc || null, data: today() };
+  const { data, error } = await sb.from('project_caixa').insert(row).select().single();
+  if (error) return fail(error);
+  P.caixa.unshift(data); render(); toast(dir === 'out' ? 'Retirada registrada.' : 'Guardado na caixinha ✓');
+}
+async function delCaixa(id) {
+  if (!arm('cx' + id)) return;
+  const { error } = await sb.from('project_caixa').delete().eq('id', id);
+  if (error) return fail(error);
+  S.P.caixa = S.P.caixa.filter(c => c.id !== id); render();
+}
+async function saveFichaAll() {
+  const p = S.P.p, f = Object.assign({}, p.ficha || {});
+  document.querySelectorAll('[data-ficha]').forEach(el => {
+    const k = el.dataset.ficha, raw = el.value.trim();
+    f[k] = ['ano', 'km', 'cv_hoje'].includes(k) ? (raw ? (parseInt(raw.replace(/\D/g, ''), 10) || null) : null) : (raw || null);
+  });
+  p.ficha = f;
+  const ok = await saveProjById(p.id, { ficha: f });
+  if (ok) { render(); syncMarcha(); toast('Ficha salva ✓'); }
+}
+function viewModal() {
+  const m = S.modal; if (!m) return '';
+  return `<div id="modal" style="position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px)">
+    <div class="card" role="dialog" aria-modal="true" style="max-width:480px;width:100%;gap:14px;background:#17191C">
+      <h2>${esc(m.title)}</h2><p class="small" style="line-height:1.5;color:var(--mut2)">${esc(m.text)}</p>
+      <div class="grid2"><button class="btn ghost" id="mcancel">Cancelar</button><button class="btn" id="mok" style="background:#C43C3C;color:#fff">${esc(m.ok)}</button></div>
+    </div></div>`;
+}
+async function setCheck(item, status) {
+  const P = S.P, row = P.diag.find(d => d.item === item);
+  if (row && row.status === status) {
+    P.diag = P.diag.filter(d => d !== row); status = null;
+    const { error } = await sb.from('project_diagnostics').delete().eq('project_id', P.p.id).eq('item', item); if (error) fail(error);
+  } else {
+    if (row) row.status = status; else P.diag.push({ item, status });
+    const { error } = await sb.from('project_diagnostics').upsert({ project_id: P.p.id, item, status }, { onConflict: 'project_id,item' }); if (error) fail(error);
+  }
+  await syncAutoItem(item, status); render(); syncMarcha();
+}
+// "Revisar" e "Não sei" geram (ou removem) um item automático no Stage 0
+async function syncAutoItem(item, status) {
+  const P = S.P, key = 'diag:' + item, ex = P.items.find(i => i.origem === key);
+  const want = status === 'verificar' ? 'Revisar: ' + item : status === 'nao_sei' ? 'Verificar: ' + item : null;
+  if (ex) {
+    if (want) { if (ex.nome !== want) { ex.nome = want; await sb.from('project_items').update({ nome: want }).eq('id', ex.id); } return; }
+    if (ex.status === 'lista' && !P.exp.some(e => e.project_item_id === ex.id)) { await sb.from('project_items').delete().eq('id', ex.id); P.items = P.items.filter(i => i !== ex); }
+    return;
+  }
+  if (!want) return;
+  const s0 = P.stages.find(s => s.ordem === 0) || P.stages[0];
+  const { data, error } = await sb.from('project_items').insert({ project_id: P.p.id, stage_id: s0.id, nome: want, origem: key }).select().single();
+  if (error) return fail(error);
+  P.items.push(data);
+}
+async function setHas(itemId, val) {
+  const it = S.P.items.find(i => i.id === itemId); if (!it) return;
+  const ja = val || null, now = new Date().toISOString();
+  const status = ja === 'no_carro' ? 'instalado' : ja === 'guardado' ? 'comprado' : 'lista';
+  const patch = { ja_tenho: ja, status, comprado_em: status === 'lista' ? null : (it.comprado_em || now), instalado_em: status === 'instalado' ? (it.instalado_em || now) : null };
+  Object.assign(it, patch); render(); syncMarcha();
+  const { error } = await sb.from('project_items').update(patch).eq('id', itemId); if (error) fail(error);
+}
+async function addHave(stageId, nome) {
+  nome = nome.trim(); if (!nome) return;
+  const { data, error } = await sb.from('project_items').insert({ project_id: S.P.p.id, stage_id: stageId, nome, ja_tenho: 'guardado', status: 'comprado', comprado_em: new Date().toISOString() }).select().single();
+  if (error) return fail(error);
+  S.P.items.push(data); render(); syncMarcha();
+  const el = document.querySelector(`[data-addhave="${stageId}"]`); if (el) el.focus();
+}
+async function saveFicha(key, val) {
+  const p = S.P.p; p.ficha = Object.assign({}, p.ficha || {}, { [key]: val });
+  await saveProj({ ficha: p.ficha });
+  const g = document.getElementById('gear'); if (g) g.innerHTML = gearSvg(); syncMarcha(); toast('Salvo ✓');
+}
+async function toggleCycle(field) {
+  const P = S.P;
+  if (!P.cycle) {
+    const { data, error } = await sb.from('project_cycles').insert({ project_id: P.p.id, numero: P.closed + 1, [field]: true }).select().single();
+    if (error) return fail(error); P.cycle = data;
+  } else {
+    const v = !P.cycle[field]; P.cycle[field] = v;
+    const { error } = await sb.from('project_cycles').update({ [field]: v }).eq('id', P.cycle.id);
+    if (error) fail(error);
+  }
+  render(); syncMarcha();
+}
+async function closeCycle() {
+  const P = S.P, c = P.cycle;
+  if (!c || !(c.testes && c.regulagem && c.ajustes)) return toast('Marque testes, regulagem e ajustes antes de fechar o ciclo.');
+  const { error } = await sb.from('project_cycles').update({ fechado_em: new Date().toISOString() }).eq('id', c.id);
+  if (error) return fail(error);
+  P.closed += 1; P.cycle = null; S.phase = 3; render(); syncMarcha();
+  toast('Ciclo fechado! Planeje o próximo stage na 3ª marcha.');
+}
+
+// ---------------- Diário ----------------
+function viewDiary() {
+  const list = S.P.diary;
+  return `<div class="col"><div class="card">
+    <b>Novo registro</b>
+    <textarea id="dtexto" placeholder="O que rolou hoje no projeto?"></textarea>
+    <label class="btn ghost" style="display:flex;align-items:center;justify-content:center">Escolher fotos<input id="dfotos" type="file" accept="image/*" multiple style="display:none"></label>
+    <span class="tiny mut" id="dcount">Nenhuma foto escolhida</span>
+    <button class="btn" id="dpub" ${S.busy ? 'disabled' : ''}>${S.busy ? 'ENVIANDO…' : 'PUBLICAR NO DIÁRIO'}</button>
+  </div>
+  ${list === null ? '<p class="mut small">Carregando diário…</p>' : list.length ? list.map(e => `<div class="card">
+    <div class="row between"><span class="tiny mut">${new Date(e.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span><button class="x ${armed('di' + e.id) ? 'armed' : ''}" data-deldiary="${e.id}" aria-label="Apagar registro">${armed('di' + e.id) ? 'Apagar?' : '×'}</button></div>
+    ${e.texto ? `<p style="line-height:1.45">${esc(e.texto)}</p>` : ''}
+    ${e.urls?.length ? `<div class="photos">${e.urls.map(u => `<img src="${esc(u)}" alt="Foto do projeto" loading="lazy">`).join('')}</div>` : ''}
+  </div>`).join('') : '<p class="mut small">Ainda não tem registros. Que tal a primeira foto do projeto?</p>'}</div>`;
+}
+async function loadDiary() {
+  const { data, error } = await sb.from('diary_entries').select('*').eq('project_id', S.P.p.id).order('criado_em', { ascending: false });
+  if (error) return fail(error);
+  const paths = data.flatMap(e => e.fotos || []);
+  const map = {};
+  if (paths.length) {
+    const { data: signed, error: se } = await sb.storage.from('diario').createSignedUrls(paths, 3600);
+    if (se) fail(se); else signed.forEach(s => { if (s.signedUrl) map[s.path] = s.signedUrl; });
+  }
+  data.forEach(e => e.urls = (e.fotos || []).map(p => map[p]).filter(Boolean));
+  S.P.diary = data; if (S.view === 'project' && S.tab === 'diario') render();
+}
+async function delDiary(id) {
+  if (!arm('di' + id)) return;
+  const e = S.P.diary.find(x => x.id === id);
+  const { error } = await sb.from('diary_entries').delete().eq('id', id);
+  if (error) return fail(error);
+  if (e?.fotos?.length) sb.storage.from('diario').remove(e.fotos);
+  S.P.diary = S.P.diary.filter(x => x.id !== id); render();
+}
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+  } catch (e) { return file; }
+}
+async function publishDiary() {
+  const texto = document.getElementById('dtexto').value.trim(), files = [...(document.getElementById('dfotos').files || [])];
+  if (!texto && !files.length) return toast('Escreva algo ou escolha uma foto.');
+  S.busy = true; render();
+  try {
+    const fotos = [];
+    for (let i = 0; i < files.length; i++) {
+      const blob = await shrink(files[i]);
+      const path = `${S.user.id}/${S.P.p.id}/${Date.now()}-${i}.jpg`;
+      const { error } = await sb.storage.from('diario').upload(path, blob, { contentType: 'image/jpeg' });
+      if (error) throw error;
+      fotos.push(path);
+    }
+    const { error } = await sb.from('diary_entries').insert({ project_id: S.P.p.id, texto: texto || null, fotos });
+    if (error) throw error;
+    S.busy = false; toast('Publicado no diário!'); S.P.diary = null; render(); loadDiary();
+  } catch (e) { S.busy = false; render(); fail(e); }
+}
+
+// ---------------- Ofertas, parceiros e admin ----------------
+const LOJAS = { mercado_livre: 'Mercado Livre', shopee: 'Shopee', aliexpress: 'AliExpress', amazon: 'Amazon', outra: 'Outra loja' };
+async function loadCatalog() {
+  const [pf, of, bn] = await Promise.all([
+    sb.from('profiles').select('is_admin').eq('id', S.user.id).single(),
+    sb.from('products').select('*, product_links(*)'),
+    sb.from('banners').select('*')
+  ]);
+  S.isAdmin = !!(pf.data && pf.data.is_admin);
+  S.offers = of.error ? [] : (of.data || []);
+  S.banners = bn.error ? [] : (bn.data || []);
+}
+function offersFor(nome, tiId) {
+  const n = (nome || '').toLowerCase(), car = S.P ? S.P.p.car_model_id : null;
+  return (S.offers || []).filter(o => o.ativo !== false && (o.product_links || []).length
+    && (!o.car_model_id || o.car_model_id === car)
+    && ((tiId && o.template_item_id === tiId) || (o.palavras || []).some(w => w && n.includes(String(w).toLowerCase()))));
+}
+function offerBtn(x) {
+  if (x.pi.ja_tenho) return '';
+  const l = offersFor(x.nome, x.pi.template_item_id);
+  return l.length ? `<button class="chip xs" data-offers="${x.pi.id}" style="min-height:28px;margin-left:6px;border-color:#5A3520;color:var(--acc2);vertical-align:1px">Ofertas (${l.length})</button>` : '';
+}
+function openOffers(itemId) {
+  const pi = S.P.items.find(i => i.id === itemId); if (!pi) return;
+  const nome = itemName(pi); S.sheet = { nome, list: offersFor(nome, pi.template_item_id) }; render();
+}
+function viewSheet() {
+  const s = S.sheet; if (!s) return '';
+  return `<div id="sheet" style="position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center">
+    <div class="card" role="dialog" aria-modal="true" style="max-width:520px;width:100%;max-height:82vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);background:#17191C">
+      <div class="row between"><h2>Ofertas</h2><button class="x" id="sheetx" aria-label="Fechar">×</button></div>
+      <span class="small mut">${esc(s.nome)}</span>
+      ${s.list.map(o => `<div class="card" style="background:var(--card2)">
+        <div class="row" style="gap:12px">${o.imagem_url ? `<img src="${esc(o.imagem_url)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none">` : ''}<b style="flex:1">${esc(o.nome)}</b></div>
+        ${(o.product_links || []).map(l => `<div class="item"><span class="nm">${esc(LOJAS[l.loja] || l.loja)}${l.preco_ref ? `<br><span class="tiny mut">a partir de ${brl(l.preco_ref)}</span>` : ''}</span><button class="btn sm" data-golink="${l.id}">Ver na loja</button></div>`).join('')}
+      </div>`).join('')}
+      <span class="tiny mut">Links de parceiros: o Prep.pro pode receber comissão, sem custo extra para você.</span>
+    </div></div>`;
+}
+function goLink(id) {
+  let link = null; (S.offers || []).forEach(o => (o.product_links || []).forEach(l => { if (l.id === id) link = l; }));
+  if (!link) return;
+  window.open(link.url_afiliado, '_blank', 'noopener');
+  sb.from('link_clicks').insert({ user_id: S.user.id, project_id: S.P ? S.P.p.id : null, product_link_id: id }).then(() => {});
+}
+function bannerFor(pos, ordem) { return (S.banners || []).find(b => b.ativo && b.posicao === pos && (pos !== 'stage' || b.stage_ordem === ordem)); }
+function bannerCard(b) {
+  if (!b || S._bn) return ''; S._bn = 1;
+  return `<div class="card" style="background:#16181B;border-color:#2F3237;gap:8px">
+    <div class="row between"><span class="tiny" style="letter-spacing:1.5px;font-weight:700;color:var(--mut)">PARCEIRO</span><span class="tiny mut">${esc(b.parceiro)}</span></div>
+    ${b.imagem_url ? `<img src="${esc(b.imagem_url)}" alt="${esc(b.parceiro)}" style="width:100%;max-height:170px;object-fit:cover;border-radius:10px">` : ''}
+    <b>${esc(b.titulo)}</b>${b.texto ? `<span class="small mut" style="line-height:1.4">${esc(b.texto)}</span>` : ''}
+    ${b.url ? `<button class="btn ghost sm" data-banner="${b.id}" style="align-self:flex-start">Conhecer ›</button>` : ''}
+  </div>`;
+}
+function openBanner(id) {
+  const b = (S.banners || []).find(x => x.id === id); if (!b || !b.url) return;
+  window.open(b.url, '_blank', 'noopener');
+  sb.from('banner_clicks').insert({ banner_id: id, user_id: S.user.id, project_id: S.P ? S.P.p.id : null }).then(() => {});
+}
+// Admin
+async function openAdmin(tab) {
+  S.atab = tab || S.atab || 'ofertas'; S.view = 'admin';
+  if (!S.adminTpl) { const { data } = await sb.from('template_stages').select('nome,ordem,template_items(id,nome,ordem)').order('ordem'); S.adminTpl = data || []; }
+  await Promise.all([loadCatalog(), loadCars()]);
+  if (S.atab === 'cliques') await loadClicks();
+  render();
+}
+function tplItemName(id) { for (const s of S.adminTpl || []) { const t = (s.template_items || []).find(t => t.id === id); if (t) return t.nome; } return ''; }
+function viewAdmin() {
+  const t = S.atab;
+  let body = '';
+  if (t === 'ofertas') {
+    body = `<button class="btn" data-aoffer="new">+ NOVA OFERTA</button>
+      ${(S.offers || []).map(o => `<button class="card pcard" data-aoffer="${o.id}" style="opacity:${o.ativo === false ? .5 : 1}">
+        <div class="row between"><b>${esc(o.nome)}</b><span class="tiny mut">${o.ativo === false ? 'pausada' : 'ativa'}</span></div>
+        <span class="small mut">${(o.product_links || []).map(l => LOJAS[l.loja] || l.loja).join(' · ') || 'sem link'}</span>
+        <span class="tiny mut">${o.template_item_id ? 'Item: ' + esc(tplItemName(o.template_item_id)) : ''}${(o.palavras || []).length ? (o.template_item_id ? ' · ' : '') + 'Palavras: ' + esc(o.palavras.join(', ')) : ''}</span>
+      </button>`).join('') || '<p class="small mut">Nenhuma oferta ainda. Cadastre os seus links de afiliado.</p>'}`;
+  } else if (t === 'parceiros') {
+    body = `<button class="btn" data-abanner="new">+ NOVO BANNER</button>
+      ${(S.banners || []).map(b => `<button class="card pcard" data-abanner="${b.id}" style="opacity:${b.ativo ? 1 : .5}">
+        <div class="row between"><b>${esc(b.parceiro)}</b><span class="tiny mut">${b.ativo ? 'ativo' : 'pausado'}</span></div>
+        <span class="small">${esc(b.titulo)}</span><span class="tiny mut">Aparece em: ${posLabel(b)}</span></button>`).join('') || '<p class="small mut">Nenhum banner ainda.</p>'}`;
+  } else {
+    const c = S.clicks || { links: {}, banners: {} };
+    const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
+    const bn = (S.banners || []).map(b => ({ nome: b.parceiro + ' · ' + b.titulo, n: c.banners[b.id] || 0 })).sort((a, b) => b.n - a.n);
+    body = `<div class="kpis"><div class="kpi"><span>Cliques em ofertas</span><b>${lk.reduce((a, x) => a + x.n, 0)}</b></div><div class="kpi"><span>Cliques em banners</span><b>${bn.reduce((a, x) => a + x.n, 0)}</b></div></div>
+      <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Ofertas</b>${lk.map(x => `<div class="item"><span class="nm">${esc(x.nome)}<br><span class="tiny mut">${esc(x.por)}</span></span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem ofertas.</p>'}</div>
+      <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
+  }
+  return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
+    <div class="tabs"><button class="${t === 'ofertas' ? 'on' : ''}" data-atab="ofertas">Ofertas</button><button class="${t === 'parceiros' ? 'on' : ''}" data-atab="parceiros">Parceiros</button><button class="${t === 'cliques' ? 'on' : ''}" data-atab="cliques">Cliques</button></div>
+    ${body}`;
+}
+function posLabel(b) { if (b.posicao === 'stage') { const s = (S.adminTpl || []).find(x => x.ordem === b.stage_ordem); return s ? s.nome : 'Stage ' + b.stage_ordem; } return b.posicao === 'garagem' ? 'Garagem' : 'Aba Gastos'; }
+async function loadClicks() {
+  const [l, b] = await Promise.all([sb.from('link_clicks').select('product_link_id'), sb.from('banner_clicks').select('banner_id')]);
+  const links = {}, banners = {};
+  (l.data || []).forEach(r => links[r.product_link_id] = (links[r.product_link_id] || 0) + 1);
+  (b.data || []).forEach(r => banners[r.banner_id] = (banners[r.banner_id] || 0) + 1);
+  S.clicks = { links, banners };
+}
+function openOfferForm(id) {
+  const o = id === 'new' ? null : (S.offers || []).find(x => x.id === id);
+  const links = (o ? o.product_links : []).map(l => ({ loja: l.loja, url: l.url_afiliado, preco: l.preco_ref }));
+  while (links.length < 3) links.push({ loja: ['mercado_livre', 'shopee', 'aliexpress'][links.length], url: '', preco: null });
+  S.af = { id: o ? o.id : null, nome: o ? o.nome : '', item: o ? o.template_item_id || '' : '', palavras: o ? (o.palavras || []).join(', ') : '', car: o ? o.car_model_id || '' : '', img: o ? o.imagem_url || '' : '', ativo: o ? o.ativo !== false : true, links };
+  S.view = 'aoffer'; S.armed = null; render(); window.scrollTo(0, 0);
+}
+function viewOfferForm() {
+  const f = S.af;
+  return `<div class="row"><button class="icon-btn" data-atab="ofertas" aria-label="Voltar">${back}</button><h1 style="font-size:28px">${f.id ? 'Editar oferta' : 'Nova oferta'}</h1></div>
+  <label class="f">Produto<input id="afnome" value="${esc(f.nome)}" placeholder="Ex.: Turbina ZR .70 Black"></label>
+  <label class="f">Aparece no item do plano<select id="afitem"><option value="">— nenhum (usar palavras-chave) —</option>${(S.adminTpl || []).map(s => `<optgroup label="${esc(s.nome)}">${(s.template_items || []).sort((a, b) => a.ordem - b.ordem).map(t => `<option value="${t.id}" ${f.item === t.id ? 'selected' : ''}>${esc(t.nome)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+  <label class="f">Palavras-chave (para itens que o usuário criou)<input id="afpal" value="${esc(f.palavras)}" placeholder="Ex.: turbina, turbo, coletor"></label>
+  <label class="f">Só para o carro (opcional)<select id="afcar"><option value="">Todos os carros</option>${(S.cars || []).map(c => `<option value="${c.id}" ${f.car === c.id ? 'selected' : ''}>${esc(carName(c))}</option>`).join('')}</select></label>
+  <label class="f">Foto (link da imagem, opcional)<input id="afimg" value="${esc(f.img)}" placeholder="https://…"></label>
+  <b>Links de afiliado</b>
+  ${f.links.map((l, i) => `<div class="card" style="gap:8px;background:var(--card2)">
+    <select id="afloja${i}">${Object.keys(LOJAS).map(k => `<option value="${k}" ${l.loja === k ? 'selected' : ''}>${LOJAS[k]}</option>`).join('')}</select>
+    <input id="afurl${i}" value="${esc(l.url)}" placeholder="Cole o seu link de afiliado" inputmode="url">
+    <input id="afpreco${i}" value="${esc(fmtIn(l.preco))}" placeholder="Preço de referência (R$, opcional)" inputmode="decimal">
+  </div>`).join('')}
+  <label class="row" style="gap:10px"><input id="afativo" type="checkbox" ${f.ativo ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc)"> Oferta ativa</label>
+  <button class="btn" id="afsave">SALVAR OFERTA</button>
+  ${f.id ? `<button class="btn danger ${armed('afdel') ? 'armed' : ''}" id="afdel">${armed('afdel') ? 'Toque de novo para excluir' : 'Excluir oferta'}</button>` : ''}`;
+}
+async function saveOffer() {
+  const g = id => document.getElementById(id), f = S.af;
+  const nome = g('afnome').value.trim(); if (!nome) return toast('Dê um nome ao produto.');
+  const row = { nome, template_item_id: g('afitem').value || null, palavras: g('afpal').value.split(',').map(s => s.trim().toLowerCase()).filter(Boolean), car_model_id: g('afcar').value || null, imagem_url: g('afimg').value.trim() || null, ativo: g('afativo').checked };
+  if (!row.template_item_id && !row.palavras.length) return toast('Escolha um item do plano ou digite palavras-chave.');
+  const links = [0, 1, 2].map(i => ({ loja: g('afloja' + i).value, url_afiliado: g('afurl' + i).value.trim(), preco_ref: parseMoney(g('afpreco' + i).value) })).filter(l => l.url_afiliado);
+  if (!links.length) return toast('Cole pelo menos um link de afiliado.');
+  if (links.some(l => !/^https?:\/\//i.test(l.url_afiliado))) return toast('Os links precisam começar com https://');
+  let pid = f.id;
+  if (pid) { const { error } = await sb.from('products').update(row).eq('id', pid); if (error) return fail(error); await sb.from('product_links').delete().eq('product_id', pid); }
+  else { const { data, error } = await sb.from('products').insert(row).select().single(); if (error) return fail(error); pid = data.id; }
+  const { error } = await sb.from('product_links').insert(links.map(l => Object.assign({ product_id: pid }, l)));
+  if (error) return fail(error);
+  toast('Oferta salva ✓'); await openAdmin('ofertas');
+}
+async function deleteOffer() {
+  if (!arm('afdel')) return;
+  const { error } = await sb.from('products').delete().eq('id', S.af.id); if (error) return fail(error);
+  toast('Oferta excluída.'); await openAdmin('ofertas');
+}
+function openBannerForm(id) {
+  const b = id === 'new' ? null : (S.banners || []).find(x => x.id === id);
+  S.ab = { id: b ? b.id : null, parceiro: b ? b.parceiro : '', titulo: b ? b.titulo : '', texto: b ? b.texto || '' : '', url: b ? b.url || '' : '', img: b ? b.imagem_url || '' : '', pos: b ? (b.posicao === 'stage' ? 'stage:' + b.stage_ordem : b.posicao) : 'garagem', ativo: b ? b.ativo : true };
+  S.view = 'abanner'; S.armed = null; render(); window.scrollTo(0, 0);
+}
+function viewBannerForm() {
+  const f = S.ab;
+  const opts = [['garagem', 'Garagem (embaixo dos projetos)'], ['gastos', 'Aba Gastos']].concat((S.adminTpl || []).map(s => ['stage:' + s.ordem, 'Dentro do ' + s.nome]));
+  return `<div class="row"><button class="icon-btn" data-atab="parceiros" aria-label="Voltar">${back}</button><h1 style="font-size:28px">${f.id ? 'Editar banner' : 'Novo banner'}</h1></div>
+  <label class="f">Parceiro<input id="abparc" value="${esc(f.parceiro)}" placeholder="Ex.: RS Performance"></label>
+  <label class="f">Título<input id="abtit" value="${esc(f.titulo)}" placeholder="Ex.: Injeção FuelTech com instalação"></label>
+  <label class="f">Texto curto (opcional)<textarea id="abtxt" placeholder="Uma frase, sem exagero.">${esc(f.texto)}</textarea></label>
+  <label class="f">Link (opcional)<input id="aburl" value="${esc(f.url)}" placeholder="https://…" inputmode="url"></label>
+  <label class="f">Imagem (link, opcional)<input id="abimg" value="${esc(f.img)}" placeholder="https://…"></label>
+  <label class="f">Onde aparece<select id="abpos">${opts.map(o => `<option value="${o[0]}" ${f.pos === o[0] ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>
+  <label class="row" style="gap:10px"><input id="abativo" type="checkbox" ${f.ativo ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc)"> Banner ativo</label>
+  <span class="tiny mut">Aparece um banner por tela, sempre marcado como "Parceiro".</span>
+  <button class="btn" id="absave">SALVAR BANNER</button>
+  ${f.id ? `<button class="btn danger ${armed('abdel') ? 'armed' : ''}" id="abdel">${armed('abdel') ? 'Toque de novo para excluir' : 'Excluir banner'}</button>` : ''}`;
+}
+async function saveBanner() {
+  const g = id => document.getElementById(id), f = S.ab;
+  const parceiro = g('abparc').value.trim(), titulo = g('abtit').value.trim();
+  if (!parceiro || !titulo) return toast('Preencha parceiro e título.');
+  const url = g('aburl').value.trim(); if (url && !/^https?:\/\//i.test(url)) return toast('O link precisa começar com https://');
+  const pos = g('abpos').value;
+  const row = { parceiro, titulo, texto: g('abtxt').value.trim() || null, url: url || null, imagem_url: g('abimg').value.trim() || null, posicao: pos.startsWith('stage:') ? 'stage' : pos, stage_ordem: pos.startsWith('stage:') ? +pos.split(':')[1] : null, ativo: g('abativo').checked };
+  const q = f.id ? sb.from('banners').update(row).eq('id', f.id) : sb.from('banners').insert(row);
+  const { error } = await q; if (error) return fail(error);
+  toast('Banner salvo ✓'); await openAdmin('parceiros');
+}
+async function deleteBanner() {
+  if (!arm('abdel')) return;
+  const { error } = await sb.from('banners').delete().eq('id', S.ab.id); if (error) return fail(error);
+  toast('Banner excluído.'); await openAdmin('parceiros');
+}
+
+// ---------------- Gráficos ----------------
+const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
+const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
+const tipBox = () => '<div class="tipbox tiny" style="min-height:16px;color:var(--mut2)">Toque num item para ver o valor</div>';
+function viewGraficos() {
+  if (!S.P.exp.length) return '<div class="card"><b>Sem dados ainda</b><span class="small mut">Lance gastos (previstos ou realizados) para ver os gráficos.</span></div>';
+  return chartStages() + chartTipo() + chartAcum();
+}
+function chartStages() {
+  const P = S.P;
+  const groups = [{ id: null, nome: 'Geral' }].concat(P.stages.map(s => ({ id: s.id, nome: s.nome })))
+    .map(g => Object.assign(g, money(stageExp(g.id)))).filter(g => g.prev || g.real);
+  const max = Math.max(1, ...groups.map(g => Math.max(g.prev, g.real)));
+  return `<div class="card chart">
+    <b>Previsto x realizado por stage</b>
+    <div class="row tiny mut" style="gap:14px"><span class="row" style="gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:${PREV_COR};display:inline-block"></i>Previsto</span><span class="row" style="gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:${REAL_COR};display:inline-block"></i>Realizado</span></div>
+    ${groups.map(g => { const over = g.prev && g.real > g.prev;
+      return `<div class="col" style="gap:4px;cursor:pointer" data-tip="${esc(g.nome)}: realizado ${brl2(g.real)} de ${brl2(g.prev)} previsto${over ? ' (' + brl2(g.real - g.prev) + ' acima)' : ''}">
+        <div class="row between small"><span>${esc(g.nome.split(' · ')[0])}${g.nome.includes(' · ') ? `<span class="mut"> · ${esc(g.nome.split(' · ')[1])}</span>` : ''}</span><span class="mut">${brl(g.real)} / ${brl(g.prev)}</span></div>
+        ${g.prev ? `<div style="height:8px;border-radius:0 4px 4px 0;background:${PREV_COR};width:${Math.max(1, g.prev / max * 100)}%"></div>` : '<span class="tiny mut">sem previsto</span>'}
+        ${g.real ? `<div style="height:8px;border-radius:0 4px 4px 0;background:${REAL_COR};width:${Math.max(1, g.real / max * 100)}%"></div>` : ''}
+        ${over ? `<span class="tiny" style="color:var(--bad);font-weight:700">▲ ${brl(g.real - g.prev)} acima do previsto</span>` : ''}
+      </div>`; }).join('')}
+    ${tipBox()}
+  </div>`;
+}
+function chartTipo() {
+  const P = S.P, keys = Object.keys(TIPOS), vals = keys.map(k => sumBy(P.exp.filter(e => e.tipo === k), e => e.valor_realizado));
+  const total = vals.reduce((a, b) => a + b, 0);
+  if (!total) return '<div class="card"><b>Para onde foi o dinheiro</b><span class="small mut">Aparece quando houver gastos realizados.</span></div>';
+  const R = 52, C = 2 * Math.PI * R, GAP = vals.filter(v => v > 0).length > 1 ? 2 : 0; let acc = 0;
+  const segs = keys.map((k, i) => { const v = vals[i]; if (!v) return ''; const len = Math.max(v / total * C - GAP, 0.5);
+    const s = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${TIPO_CHART[k]}" stroke-width="20" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-acc).toFixed(2)}" transform="rotate(-90 70 70)" data-tip="${TIPOS[k]}: ${brl2(v)} (${Math.round(v / total * 100)}%)" style="cursor:pointer"><title>${TIPOS[k]}: ${brl2(v)}</title></circle>`;
+    acc += v / total * C; return s; }).join('');
+  return `<div class="card chart">
+    <b>Para onde foi o dinheiro</b>
+    <div class="row" style="gap:16px;align-items:center">
+      <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Gasto realizado por tipo" style="flex:none">${segs}
+        <text x="70" y="66" text-anchor="middle" font-size="11" fill="#A7AAB0" font-family="Barlow, system-ui, sans-serif">realizado</text>
+        <text x="70" y="84" text-anchor="middle" font-size="17" font-weight="700" fill="#F2EFEA" font-family="Barlow Condensed, Barlow, system-ui, sans-serif">${brl(total)}</text></svg>
+      <div class="col" style="gap:8px;flex:1;min-width:0">${keys.map((k, i) => vals[i] ? `<div class="row between small" data-tip="${TIPOS[k]}: ${brl2(vals[i])}" style="cursor:pointer"><span class="row" style="gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:${TIPO_CHART[k]};display:inline-block;flex:none"></i>${TIPOS[k]}</span><span class="mut">${Math.round(vals[i] / total * 100)}%</span></div>` : '').join('')}</div>
+    </div>
+    ${tipBox()}
+  </div>`;
+}
+function chartAcum() {
+  const P = S.P, m = money();
+  const rows = P.exp.filter(e => e.valor_realizado !== null && e.valor_realizado !== undefined);
+  if (!rows.length) return '';
+  const byDay = {}; rows.forEach(e => byDay[e.data] = (byDay[e.data] || 0) + num(e.valor_realizado));
+  const days = Object.keys(byDay).sort(); let cum = 0;
+  const pts = days.map(d => ({ d, v: (cum += byDay[d]) }));
+  const W = 340, H = 180, L = 10, Rr = 12, T = 22, B = 24;
+  const ymax = Math.max(cum, m.total || m.prev || 0) * 1.12 || 1;
+  const t0 = +new Date(days[0]), t1 = +new Date(days[days.length - 1]);
+  const x = d => t1 === t0 ? (L + (W - Rr - L) / 2) : L + (+new Date(d) - t0) / (t1 - t0) * (W - Rr - L);
+  const y = v => T + (1 - v / ymax) * (H - T - B);
+  const path = pts.map((p, i) => (i ? 'L' : 'M') + x(p.d).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' ');
+  const fmtD = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const ref = (v, label) => v ? `<line x1="${L}" x2="${W - Rr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="#8C9096" stroke-width="1" stroke-dasharray="4 4"/><text x="${L}" y="${(y(v) - 5).toFixed(1)}" font-size="10.5" fill="#A7AAB0" font-family="Barlow, system-ui, sans-serif">${label} ${brl(v)}</text>` : '';
+  const last = pts[pts.length - 1];
+  return `<div class="card chart">
+    <b>Gasto acumulado</b>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gasto realizado acumulado ao longo do tempo">
+      <line x1="${L}" x2="${W - Rr}" y1="${H - B}" y2="${H - B}" stroke="#2A2D33" stroke-width="1"/>
+      ${ref(m.total || m.prev, m.total ? 'Orçamento' : 'Previsto')}
+      ${pts.length > 1 ? `<path d="${path}" fill="none" stroke="${REAL_COR}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+      <circle cx="${x(last.d).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="4.5" fill="${REAL_COR}" stroke="#1A1C20" stroke-width="2"/>
+      ${pts.map(p => `<circle cx="${x(p.d).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="13" fill="transparent" data-tip="Até ${fmtD(p.d)}: ${brl2(p.v)} gastos" style="cursor:pointer"/>`).join('')}
+      <text x="${L}" y="${H - 7}" font-size="10.5" fill="#A7AAB0" font-family="Barlow, system-ui, sans-serif">${fmtD(days[0])}</text>
+      ${days.length > 1 ? `<text x="${W - Rr}" y="${H - 7}" text-anchor="end" font-size="10.5" fill="#A7AAB0" font-family="Barlow, system-ui, sans-serif">${fmtD(days[days.length - 1])}</text>` : ''}
+    </svg>
+    <span class="small"><b>${brl(last.v)}</b> <span class="mut">gastos até agora${m.total ? ' · ' + Math.round(last.v / m.total * 100) + '% do orçamento' : ''}</span></span>
+    ${tipBox()}
+  </div>`;
+}
+
+// ---------------- Render e eventos ----------------
+function render() {
+  const v = S.view; S._bn = 0;
+  $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
+    : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+  if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
+  if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
+}
+$app.addEventListener('click', async ev => {
+  if (S.modal) {
+    if (ev.target.id === 'modal' || ev.target.id === 'mcancel') { S.modal = null; return render(); }
+    if (ev.target.id === 'mok') { const run = S.modal.run; S.modal = null; render(); return run(); }
+    return;
+  }
+  if (S.sheet) {
+    const gl = ev.target.closest('[data-golink]'); if (gl) return goLink(gl.dataset.golink);
+    if (ev.target.id === 'sheet' || ev.target.closest('#sheetx')) { S.sheet = null; return render(); }
+    return;
+  }
+  const tip = ev.target.closest('[data-tip]');
+  if (tip) { const box = tip.closest('.chart')?.querySelector('.tipbox'); if (box) { box.textContent = tip.dataset.tip; box.style.color = 'var(--fg)'; } return; }
+  const b = ev.target.closest('button,[data-open],[data-phase],[data-goto]'); if (!b) return;
+  const id = b.id, ds = b.dataset;
+  if (ds.offers) return openOffers(ds.offers);
+  if (ds.banner) return openBanner(ds.banner);
+  if (id === 'admin') return openAdmin('ofertas');
+  if (id === 'adback') return loadGarage();
+  if (ds.atab) return openAdmin(ds.atab);
+  if (ds.aoffer) return openOfferForm(ds.aoffer);
+  if (ds.abanner) return openBannerForm(ds.abanner);
+  if (id === 'afsave') return saveOffer();
+  if (id === 'afdel') return deleteOffer();
+  if (id === 'absave') return saveBanner();
+  if (id === 'abdel') return deleteBanner();
+  if (id === 'go') return doAuth();
+  if (id === 'swap') { S.mode = S.mode === 'criar' ? 'entrar' : 'criar'; return render(); }
+  if (id === 'forgot') return forgot();
+  if (id === 'savepass') return savePass();
+  if (id === 'logout') { await sb.auth.signOut(); S.view = 'login'; return render(); }
+  if (id === 'preset') return startWizard(true);
+  if (id === 'novo') return startWizard(false);
+  if (ds.open) { S.tab = 'marchas'; S.phase = null; return openProject(ds.open); }
+  if (id === 'wback') { keepWiz(); if (S.step === 2) { S.step = 1; return render(); } return loadGarage(); }
+  if (ds.goal) { keepWiz(); S.draft.objetivo = ds.goal; return render(); }
+  if (ds.praz) { keepWiz(); S.draft.prazo = +ds.praz; return render(); }
+  if (id === 'w1') { keepWiz(); S.step = 2; return render(); }
+  if (ds.have !== undefined) { keepWiz(); S.draft.tem_carro = ds.have === '1'; return render(); }
+  if (ds.pickbrand !== undefined) { keepWiz(); S.pick.brand = ds.pickbrand; return render(); }
+  if (ds.pickcar !== undefined) {
+    const cid = ds.pickcar || null;
+    if (S.view === 'wizard') { keepWiz(); S.draft.car_model_id = cid; S.draft.carOutro = !cid; return render(); }
+    S.P.p.car_models = S.cars.find(x => x.id === cid) || null; S.pickOpen = false;
+    await saveProj({ car_model_id: cid }); render(); return syncMarcha();
+  }
+  if (ds.wcheck) { keepWiz(); const [i, st] = ds.wcheck.split('|'); const k = checksFor(S.draft.objetivo)[+i]; if (S.draft.checks[k] === st) delete S.draft.checks[k]; else S.draft.checks[k] = st; return render(); }
+  if (id === 'swapcar') { S.pickOpen = !S.pickOpen; S.pick = { brand: '', q: '' }; return render(); }
+  if (ds.check) { const [it, st] = ds.check.split('|'); return setCheck(it, st); }
+  if (ds.has) { const [iid, val] = ds.has.split('|'); return setHas(iid, val); }
+  if (ds.fichachip) { const [k, v] = ds.fichachip.split('|'); await saveFicha(k, S.P.p.ficha?.[k] === v ? null : v); return render(); }
+  if (id === 'w2') { keepWiz(); return createProject(); }
+  if (id === 'pback') return loadGarage();
+  if (ds.phase) { S.phase = +ds.phase; S.tab = 'marchas'; return render(); }
+  if (ds.goto) { S.phase = +ds.goto; S.tab = 'marchas'; return render(); }
+  if (ds.tab) { S.tab = ds.tab; render(); if (ds.tab === 'diario') loadDiary(); return; }
+  if (ds.gview) { S.gview = ds.gview; return render(); }
+  if (ds.item) return cycleItem(ds.item);
+  if (ds.delitem) return delItem(ds.delitem);
+  if (ds.pgoal) { await saveProj({ objetivo: ds.pgoal }); render(); return syncMarcha(); }
+  if (ds.pprazo) { await saveProj({ prazo: ds.pprazo }); render(); return syncMarcha(); }
+  if (id === 'gotcar') { await saveProj({ tem_carro: true }); render(); return syncMarcha(); }
+  if (id === 'delproj') return deleteProject();
+  if (id === 'save1') return saveFase1();
+  if (ds.cx) return moveCaixa(ds.cx);
+  if (ds.delcx) return delCaixa(ds.delcx);
+  if (id === 'saveficha') return saveFichaAll();
+  if (ds.self) { await saveStage(ds.self, { quem_faz: 'Eu mesmo' }); render(); return syncMarcha(); }
+  if (ds.cyc) return toggleCycle(ds.cyc);
+  if (id === 'closecyc') return closeCycle();
+  if (ds.newexp) return openForm(null, ds.newexp);
+  if (ds.exp) { const e = S.P.exp.find(x => x.id === ds.exp); if (e) openForm(e); return; }
+  if (id === 'copytsv') return copyTsv();
+  if (id === 'fback') { S.view = 'project'; S.tab = S.formBack || 'gastos'; S.form = null; return render(); }
+  if (ds.ftipo) { keepForm(); S.form.tipo = ds.ftipo; return render(); }
+  if (ds.fstage !== undefined) { keepForm(); if (S.form.stage_id !== (ds.fstage || null)) S.form.project_item_id = null; S.form.stage_id = ds.fstage || null; return render(); }
+  if (id === 'fsave') return saveExpense();
+  if (id === 'fdel') return deleteExpense();
+  if (id === 'dpub') return publishDiary();
+  if (ds.deldiary) return delDiary(ds.deldiary);
+});
+$app.addEventListener('change', async ev => {
+  const t = ev.target;
+  if (t.id === 'dfotos') { const n = t.files.length; document.getElementById('dcount').textContent = n ? n + (n === 1 ? ' foto escolhida' : ' fotos escolhidas') : 'Nenhuma foto escolhida'; return; }
+  if (t.dataset.porc) {
+    const v = parseMoney(t.value); t.value = fmtIn(v);
+    if (await saveProjById(t.dataset.porc, { orcamento_total: v, orcamento: v ? brl(v) : null })) {
+      const m = document.getElementById('money'); if (m) m.innerHTML = moneyStrip();
+      const g = document.getElementById('gear'); if (g) g.innerHTML = gearSvg(); syncMarcha(); toast('Orçamento salvo ✓');
+    }
+    return;
+  }
+  if (t.id === 'caixa1' || t.id === 'aporte1') { const ok = await saveProjById(S.P.p.id, caixaPatch()); if (ok) { const ce = document.getElementById('caixa1'); if (ce && S.P.p.caixa_desde) ce.value = fmtIn(caixaCalc().saldo); const ae = document.getElementById('aporte1'); if (ae) ae.value = fmtIn(S.P.p.aporte_mensal); toast('Caixinha salva ✓'); } return; }
+  if (t.dataset.pname) { const v = t.value.trim(); if (v) await saveProjById(t.dataset.pname, { nome: v }); return; }
+  if (t.dataset.who) { await saveStage(t.dataset.who, { quem_faz: t.value.trim() || null }); document.getElementById('gear').innerHTML = gearSvg(); syncMarcha(); return; }
+  if (t.dataset.additem) { const v = t.value; t.value = ''; return addItem(t.dataset.additem, v); }
+  if (t.dataset.addhave) { const v = t.value; t.value = ''; return addHave(t.dataset.addhave, v); }
+  if (t.dataset.ficha) {
+    const k = t.dataset.ficha, raw = t.value.trim();
+    const v = ['ano', 'km', 'cv_hoje'].includes(k) ? (raw ? (parseInt(raw.replace(/\D/g, ''), 10) || null) : null) : (raw || null);
+    if (['ano', 'km', 'cv_hoje'].includes(k)) t.value = v ?? '';
+    return saveFicha(k, v);
+  }
+  if (t.id === 'fitem') { keepForm(); }
+});
+$app.addEventListener('input', ev => {
+  if (ev.target.id !== 'carsearch') return;
+  S.pick.q = ev.target.value;
+  const sel = S.view === 'wizard' ? S.draft?.car_model_id : S.P?.p.car_model_id;
+  const box = document.getElementById('carlist'); if (box) box.innerHTML = carListHtml(sel ?? null);
+});
+$app.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter') return;
+  const t = ev.target;
+  if (S.view === 'login' && t.tagName === 'INPUT') return doAuth();
+  if (S.view === 'newpass') return savePass();
+  if (t.id === 'carsearch') { ev.preventDefault(); t.blur(); return; }
+  if (t.id === 'caixa1' || t.id === 'aporte1' || t.id === 'cxval' || t.id === 'cxdesc' || t.dataset.additem || t.dataset.addhave || t.dataset.ficha || t.dataset.porc || t.dataset.pname || t.classList.contains('who')) { ev.preventDefault(); t.blur(); }
+});
+// ---- Versão do app (troque a cada publicação) e "puxar para atualizar" ----
+const APP_VERSION = '6.0';
+async function refreshNow() {
+  try {
+    const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    const m = (await r.text()).match(/APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) { toast('Nova versão! Atualizando…'); setTimeout(() => location.reload(), 700); return; }
+  } catch (e) {}
+  if (S.view === 'garage') await loadGarage();
+  else if (S.view === 'project' && S.P) await openProject(S.P.p.id, true);
+  else return;
+  toast('Atualizado ✓');
+}
+(function pullToRefresh() {
+  const el = document.createElement('div'); el.id = 'ptr'; el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF8A4C" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>';
+  document.body.appendChild(el);
+  const svg = el.firstChild, LIMIT = 70;
+  let y0 = null, dy = 0, busy = false;
+  const typing = () => { const a = document.activeElement; return a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT'); };
+  addEventListener('touchstart', e => {
+    if (busy || window.scrollY > 0 || S.modal || typing() || document.getElementById('splash') || !['garage', 'project'].includes(S.view)) { y0 = null; return; }
+    y0 = e.touches[0].clientY; dy = 0;
+  }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (y0 === null) return;
+    if (window.scrollY > 0) { y0 = null; el.style.opacity = 0; return; }
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    const d = Math.min(dy * .5, 95);
+    el.style.transition = 'none'; el.style.transform = `translate(-50%,${d - 70}px)`; el.style.opacity = Math.min(1, d / LIMIT);
+    svg.style.transform = `rotate(${d * 4}deg)`;
+  }, { passive: true });
+  addEventListener('touchend', async () => {
+    if (y0 === null) return;
+    y0 = null; el.style.transition = '';
+    if (dy * .5 >= LIMIT) {
+      busy = true; svg.style.transform = ''; el.classList.add('spin'); el.style.transform = 'translate(-50%,16px)'; el.style.opacity = 1;
+      try { await refreshNow(); } catch (e) { fail(e); }
+      busy = false; el.classList.remove('spin');
+    }
+    el.style.transform = 'translate(-50%,-70px)'; el.style.opacity = 0; dy = 0;
+  });
+})();
+
+init().catch(fail);
+</script>
+</body>
+</html>
