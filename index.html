@@ -12,6 +12,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <title>Prep.pro</title>
+<meta name="author" content="16X Consultoria Ltda.">
+<meta name="copyright" content="© 16X Consultoria Ltda. Todos os direitos reservados.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
@@ -69,6 +71,7 @@ input.who,input.add{height:42px;background:var(--card2)}
 .tabs button{height:40px;border:0;border-radius:9px;background:transparent;color:var(--mut);font:600 15px Barlow,sans-serif}
 .tabs button.on{background:var(--fg);color:var(--bg)}
 .tabs.sub{background:transparent;padding:0;grid-template-columns:repeat(3,1fr)}.tabs.sub button{height:34px;border:1px solid var(--line);font-size:13px}.tabs.sub button.on{border-color:var(--fg)}
+.ver{text-align:center;font:500 11px/1.6 Barlow,sans-serif;color:#6B7078;letter-spacing:.5px;padding:18px 0 calc(env(safe-area-inset-bottom) + 84px)}
 .pcard{text-align:left;color:var(--fg);width:100%}
 .dot{width:10px;height:10px;border-radius:5px;flex:none}
 .photos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -186,6 +189,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
+const APP_VERSION = '6.0.2';
 const $app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -1309,6 +1313,7 @@ function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
     : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+  $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
 }
@@ -1432,7 +1437,6 @@ $app.addEventListener('keydown', ev => {
   if (t.id === 'caixa1' || t.id === 'aporte1' || t.id === 'cxval' || t.id === 'cxdesc' || t.dataset.additem || t.dataset.addhave || t.dataset.ficha || t.dataset.porc || t.dataset.pname || t.classList.contains('who')) { ev.preventDefault(); t.blur(); }
 });
 // ---- Versão do app (troque a cada publicação) e "puxar para atualizar" ----
-const APP_VERSION = '6.0.1';
 async function refreshNow() {
   try {
     const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
