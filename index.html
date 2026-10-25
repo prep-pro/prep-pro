@@ -209,7 +209,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.7';
+const APP_VERSION = '8.8';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -267,6 +267,7 @@ function viewLogin() {
   <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
   <div class="col" style="margin-top:8px">
     ${signup ? `<div class="row between" style="align-items:center"><h2 style="margin:0">Criar conta</h2><button class="link" data-mode="entrar" style="padding:4px 0">‹ Voltar para entrar</button></div>` : ''}
+    ${googleBtn()}
     ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>
     <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" placeholder="(65) 99999-9999"></label>
     <label class="f">CEP<input id="scep" data-cep="scid|suf" autocomplete="postal-code" inputmode="numeric" maxlength="9" placeholder="00000-000"></label>
@@ -343,6 +344,7 @@ async function savePass() {
 async function loadGarage() {
   try { localStorage.setItem('pp_conta', '1'); } catch (e) {}
   await Promise.all([loadCatalog(), loadPreps(), loadCupons()]).catch(() => {});
+  if (precisaCompletar()) { S.view = 'completar'; render(); window.scrollTo(0, 0); return; }
   const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
   if (error) { S.view = 'garage'; S.projects = []; render(); return fail(error); }
   S.projects = data; S.view = 'garage'; render();
@@ -1678,6 +1680,54 @@ async function adminPro(uid, tirar) {
   toast(tirar ? 'PRO removido.' : 'PRO até ' + fmtData(ate) + ' ✓'); await openAdmin('usuarios');
 }
 
+// ---------------- Login com Google e "complete seu cadastro" ----------------
+const GOOGLE_LOGIN = false; // liga quando o Google estiver configurado no Supabase
+function googleBtn() {
+  if (!GOOGLE_LOGIN) return '';
+  return `<button class="btn" id="google" style="background:#F2EFEA;color:#17191C;font:600 17px Barlow,sans-serif;letter-spacing:0">Continuar com Google</button>
+  <div class="row" style="gap:12px;align-items:center"><i style="flex:1;height:1px;background:var(--line)"></i><span class="small mut">ou com e-mail</span><i style="flex:1;height:1px;background:var(--line)"></i></div>`;
+}
+async function loginGoogle() {
+  const btn = document.getElementById('google'); if (btn) { btn.disabled = true; btn.textContent = 'Abrindo o Google…'; }
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+  if (error) { if (btn) { btn.disabled = false; btn.textContent = 'Continuar com Google'; } fail(/provider is not enabled|Unsupported provider/i.test(error.message) ? 'O login com Google ainda não foi ativado.' : error); }
+}
+const precisaCompletar = () => !!(S.perfil && (!S.perfil.termos_em || !S.perfil.celular || !S.perfil.uf));
+function viewCompletar() {
+  const pf = S.perfil || {}, uso = pf.perfil_uso || 'entusiasta', nome = pf.nome || (S.user.user_metadata && (S.user.user_metadata.full_name || S.user.user_metadata.name)) || '';
+  return `<div class="brand">PREP<b>.PRO</b></div>
+  <h1 style="font-size:34px">Falta pouco${nome ? ', ' + esc(nome.split(' ')[0]) : ''}!</h1>
+  <p class="mut" style="margin-top:-6px">Complete o cadastro para o Prep.pro mostrar preparadores, cupons e ofertas da sua região.</p>
+  <div class="col">
+    <label class="f">Nome<input id="nome" autocomplete="name" value="${esc(nome)}"></label>
+    <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" value="${esc(pf.celular || '')}" placeholder="(65) 99999-9999"></label>
+    <label class="f">CEP<input id="scep" data-cep="scid|suf" autocomplete="postal-code" inputmode="numeric" maxlength="9" value="${esc(fmtCep(pf.cep))}" placeholder="00000-000"></label>
+    <span class="tiny mut cepmsg" style="margin-top:-6px">Digite o CEP e a cidade se preenche sozinha.</span>
+    <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Cidade<input id="scid" value="${esc(pf.cidade || '')}" placeholder="Ex.: Cuiabá"></label><label class="f" style="width:96px">UF${ufSel('suf', pf.uf || '')}</label></div>
+    <div class="col" style="gap:8px"><span class="small mut">Você é</span>
+      <input type="hidden" id="suso" value="${uso}">
+      <div class="usogrid">${USO_CARDS.map(u => `<button type="button" class="uso ${u[0] === uso ? 'on' : ''}" data-uso="${u[0]}" aria-pressed="${u[0] === uso}">${u[3]}<b>${u[1]}</b><span>${u[2]}</span></button>`).join('')}</div>
+      <span class="tiny mut" id="usohint" style="display:${/preparador|loja/.test(uso) ? '' : 'none'}">Depois você completa os dados para aparecer para clientes da sua cidade.</span>
+    </div>
+    <label class="f">Como conheceu o Prep.pro?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option ${pf.como_conheceu === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+    <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" ${pf.termos_em ? (pf.aceita_ofertas ? 'checked' : '') : 'checked'} style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
+    ${pf.termos_em ? '' : `<label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>`}
+    <button class="btn" id="completar">CONTINUAR</button>
+    <button class="link" id="logout" style="align-self:center;color:var(--mut)">Sair</button>
+  </div>`;
+}
+async function salvarCompletar() {
+  const g = id => document.getElementById(id);
+  const row = { nome: g('nome').value.trim() || null, celular: g('cel').value.trim() || null, cep: g('scep').value.replace(/\D/g, '') || null, cidade: g('scid').value.trim() || null, uf: g('suf').value || null, perfil_uso: g('suso').value, como_conheceu: g('scomo').value || null, aceita_ofertas: g('sofertas').checked };
+  if (!row.nome || !row.celular || !row.cidade || !row.uf) return toast('Preencha nome, celular, cidade e UF.');
+  if (g('stermos')) { if (!g('stermos').checked) return toast('Para continuar, aceite os termos de uso.'); row.termos_em = new Date().toISOString(); }
+  const btn = g('completar'); btn.disabled = true; btn.textContent = 'Salvando…';
+  const { error } = await sb.from('profiles').update(row).eq('id', S.user.id);
+  if (error) { btn.disabled = false; btn.textContent = 'CONTINUAR'; return fail(error); }
+  if (/preparador|loja/.test(row.perfil_uso) && !S.prep) { try { localStorage.setItem('pp_prep_conv', '1'); } catch (e) {} await loadCatalog(); toast('Cadastro completo ✓'); return openPerfil(true); }
+  toast('Cadastro completo ✓'); await loadGarage();
+}
+
 // ---------------- Gráficos ----------------
 const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
 const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
@@ -1759,7 +1809,7 @@ function chartAcum() {
 function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
-    : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+    : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
   $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
@@ -1790,6 +1840,8 @@ $app.addEventListener('click', async ev => {
   if (ds.banner) return openBanner(ds.banner);
   if (id === 'admin') return openAdmin('ofertas');
   if (id === 'perfil') return openPerfil();
+  if (id === 'google') return loginGoogle();
+  if (id === 'completar') return salvarCompletar();
   if (id === 'termos') { ev.preventDefault(); return showTermos(); }
   if (id === 'verplanos') return openPlanos();
   if (id === 'plback' || id === 'plback2') return planosBack();
