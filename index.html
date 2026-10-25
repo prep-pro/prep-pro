@@ -208,8 +208,8 @@ const TIPOS = { peca: 'Peça', mao_de_obra: 'Mão de obra', frete: 'Frete', serv
 const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD66B'], frete: ['#2A1A3A', '#C9A8FF'], servico: ['#143222', '#7FE0A8'], outro: ['#2A2D33', '#C9C6C0'] };
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
-const S = { user: null, view: 'loading', mode: (() => { try { return localStorage.getItem('pp_conta') ? 'entrar' : 'criar'; } catch (e) { return 'entrar'; } })(), projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.6';
+const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
+const APP_VERSION = '8.7';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -266,7 +266,7 @@ function viewLogin() {
   <h1 style="font-size:40px">Todo carro preparado começou como um sonho.</h1>
   <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
   <div class="col" style="margin-top:8px">
-    <div class="tabs" style="grid-template-columns:repeat(2,1fr)"><button class="${signup ? '' : 'on'}" data-mode="entrar">Entrar</button><button class="${signup ? 'on' : ''}" data-mode="criar">Criar conta</button></div>
+    ${signup ? `<div class="row between" style="align-items:center"><h2 style="margin:0">Criar conta</h2><button class="link" data-mode="entrar" style="padding:4px 0">‹ Voltar para entrar</button></div>` : ''}
     ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>
     <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" placeholder="(65) 99999-9999"></label>
     <label class="f">CEP<input id="scep" data-cep="scid|suf" autocomplete="postal-code" inputmode="numeric" maxlength="9" placeholder="00000-000"></label>
