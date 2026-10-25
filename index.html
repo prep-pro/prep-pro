@@ -19,6 +19,21 @@
 <style>
 :root{--bg:#0E0F11;--card:#1A1C20;--card2:#15171A;--line:#2A2D33;--line2:#3A3E45;--fg:#F2EFEA;--mut:#A7AAB0;--mut2:#C9C6C0;--acc:#FF6A1F;--acc2:#FF8A4C;--ok:#3DBE7A;--ok2:#7FE0A8;--warn:#FFB27A;--bad:#FF7A7A}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Resposta ao toque: tudo que é tocável "afunda" um pouco ao ser pressionado */
+button,.chip,.pcard{transition:transform .09s ease,filter .09s ease,border-color .15s ease}
+button:active:not(:disabled),.chip:active{transform:scale(.97);filter:brightness(1.2)}
+.pcard:active{transform:scale(.985);filter:brightness(1.15);border-color:var(--acc)}
+.pcard.abrindo{border-color:var(--acc);filter:brightness(1.15);pointer-events:none}
+.pcard .abrindo-tag{display:none}
+.pcard{position:relative}
+.pcard.abrindo .abrindo-tag{display:flex;align-items:center;gap:8px;color:var(--acc2);font:600 13px Barlow,sans-serif;position:absolute;top:14px;right:14px;background:var(--card);padding:4px 2px 4px 10px}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,138,76,.3);border-top-color:var(--acc2);animation:gira .7s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+#carregando{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .2s}
+#carregando.on{opacity:1}
+#carregando::before{content:'';position:absolute;top:0;left:-40%;width:40%;height:100%;background:var(--acc);animation:corre 1s ease-in-out infinite}
+@keyframes corre{to{left:100%}}
+@media (prefers-reduced-motion:reduce){button,.chip,.pcard{transition:none}.spin,#carregando::before{animation-duration:2.5s}}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:Barlow,system-ui,sans-serif;font-size:16px}
 body{min-height:100vh;min-height:100dvh}
 #app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 28px);display:flex;flex-direction:column;gap:14px}
@@ -189,8 +204,13 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.0';
+const APP_VERSION = '8.1';
 const $app = document.getElementById('app');
+// Barra fina no topo enquanto algo carrega
+document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
+function carregando(on) { const el = document.getElementById('carregando'); if (el) el.classList.toggle('on', !!on); }
+// No iPhone, o efeito de "pressionado" só funciona com isso
+document.addEventListener('touchstart', () => {}, { passive: true });
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
 const num = v => (v === null || v === undefined || v === '') ? 0 : Number(v);
@@ -322,6 +342,7 @@ function viewGarage() {
     const ref = num(p.orcamento_total) || prev;
     const pct = ref ? Math.min(100, Math.round(real / ref * 100)) : 0;
     return `<button class="card pcard" data-open="${p.id}">
+      <span class="abrindo-tag"><i class="spin"></i>Abrindo…</span>
       <div class="row between"><div class="row"><span class="dot" style="background:${esc(p.cor || '#9A2A2A')}"></span><h2>${esc(p.nome)}</h2></div><span class="tiny mut">${p.marcha === 6 ? 'Acerto fino' : p.marcha + 'ª marcha'}</span></div>
       <span class="small mut">${esc(carLine(p))} · ${esc(goalName(p.objetivo))}</span>
       ${segs(p.marcha)}
@@ -1761,7 +1782,11 @@ $app.addEventListener('click', async ev => {
   if (id === 'logout') { await sb.auth.signOut(); S.view = 'login'; return render(); }
   if (id === 'preset') return startWizard(true);
   if (id === 'novo') return startWizard(false);
-  if (ds.open) { S.tab = 'marchas'; S.phase = null; return openProject(ds.open); }
+  if (ds.open) {
+    b.classList.add('abrindo'); carregando(true);
+    S.tab = 'marchas'; S.phase = null;
+    try { return await openProject(ds.open); } finally { carregando(false); }
+  }
   if (id === 'wback') { keepWiz(); if (S.step === 2) { S.step = 1; return render(); } return loadGarage(); }
   if (ds.goal) { keepWiz(); S.draft.objetivo = ds.goal; return render(); }
   if (ds.praz) { keepWiz(); S.draft.prazo = +ds.praz; return render(); }
