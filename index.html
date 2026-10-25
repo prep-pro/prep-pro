@@ -189,7 +189,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '7.0';
+const APP_VERSION = '8.0';
 const $app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const back = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -241,10 +241,16 @@ function viewLogin() {
   <h1 style="font-size:40px">Todo carro preparado começou como um sonho.</h1>
   <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
   <div class="col" style="margin-top:8px">
-    ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>` : ''}
+    ${signup ? `<label class="f">Nome<input id="nome" autocomplete="name" placeholder="Seu nome"></label>
+    <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" placeholder="(65) 99999-9999"></label>
+    <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Cidade<input id="scid" autocomplete="address-level2" placeholder="Ex.: Cuiabá"></label><label class="f" style="width:96px">UF${ufSel('suf', '')}</label></div>` : ''}
     <label class="f">E-mail<input id="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com"></label>
     <label class="f">Senha<input id="senha" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}" placeholder="mínimo 6 caracteres"></label>
-    ${signup ? `<label class="row" style="gap:12px;align-items:flex-start"><input id="souprep" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:2px"><span class="small"><b>Também sou preparador</b><br><span class="mut">Quer aparecer para quem procura preparador na sua cidade? Você completa os dados depois, e pode desmarcar quando quiser.</span></span></label>` : ''}
+    ${signup ? `<label class="f">Você é<select id="suso">${PERFIL_USO.map(p => `<option value="${p[0]}">${p[1]}</option>`).join('')}</select></label>
+    <label class="f">Como conheceu o Prep.pro?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option>${c}</option>`).join('')}</select></label>
+    <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" checked style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
+    <label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>
+    <div class="card" style="gap:4px;padding:12px 14px"><span class="small"><b>Começa grátis.</b> <span class="mut">Sem cartão. Se quiser, depois conheça o PRO: os cupons dos parceiros já pagam a assinatura.</span></span></div>` : ''}
     <button class="btn" id="go" ${S.busy ? 'disabled' : ''}>${signup ? 'CRIAR MINHA CONTA' : 'ENTRAR'}</button>
     <div class="row between"><button class="link" id="swap">${signup ? 'Já tenho conta · entrar' : 'Não tenho conta · criar'}</button>${signup ? '' : '<button class="link" id="forgot" style="color:var(--mut)">Esqueci a senha</button>'}</div>
   </div>`;
@@ -255,24 +261,32 @@ function viewNewPass() {
   <button class="btn" id="savepass">SALVAR NOVA SENHA</button>`;
 }
 async function doAuth() {
-  const email = document.getElementById('email').value.trim(), senha = document.getElementById('senha').value;
+  const g = id => document.getElementById(id);
+  const email = g('email').value.trim(), senha = g('senha').value, criar = S.mode === 'criar';
   if (!email || senha.length < 6) return toast('Preencha e-mail e uma senha com 6 ou mais caracteres.');
-  S.busy = true; render();
+  let meta = null;
+  if (criar) {
+    meta = { nome: g('nome').value.trim(), celular: g('cel').value.trim(), cidade: g('scid').value.trim(), uf: g('suf').value, perfil_uso: g('suso').value, como_conheceu: g('scomo').value, aceita_ofertas: g('sofertas').checked, termos: g('stermos').checked };
+    if (!meta.nome || !meta.celular || !meta.cidade || !meta.uf) return toast('Preencha nome, celular, cidade e UF.');
+    if (!meta.termos) return toast('Para criar a conta, aceite os termos de uso.');
+    meta.preparador = meta.perfil_uso === 'preparador' || meta.perfil_uso === 'loja';
+  }
+  // Não redesenha a tela: assim nada do que foi digitado se perde se der erro
+  const btn = g('go'), txt = btn.textContent; btn.disabled = true; btn.textContent = 'Aguarde…';
+  const solta = () => { btn.disabled = false; btn.textContent = txt; };
   try {
-    if (S.mode === 'criar') {
-      const nome = (document.getElementById('nome')?.value || '').trim();
-      const preparador = !!document.getElementById('souprep')?.checked;
-      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: { nome, preparador } } });
+    if (criar) {
+      const { data, error } = await sb.auth.signUp({ email, password: senha, options: { data: meta } });
       if (error) throw error;
-      if (!data.session) { S.busy = false; S.mode = 'entrar'; render(); return toast('Conta criada! Confirme pelo link que chegou no seu e-mail e depois entre.'); }
+      if (!data.session) { S.mode = 'entrar'; render(); return toast('Conta criada! Confirme pelo link que chegou no seu e-mail e depois entre.'); }
       S.user = data.user;
     } else {
       const { data, error } = await sb.auth.signInWithPassword({ email, password: senha });
       if (error) throw error;
       S.user = data.user;
     }
-    S.busy = false; await loadGarage();
-  } catch (e) { S.busy = false; render(); fail(e); }
+    await loadGarage();
+  } catch (e) { solta(); fail(e); }
 }
 async function forgot() {
   const email = document.getElementById('email').value.trim();
@@ -291,11 +305,14 @@ async function savePass() {
 
 // ---------------- Garagem ----------------
 async function loadGarage() {
-  await Promise.all([loadCatalog(), loadPreps()]).catch(() => {});
+  await Promise.all([loadCatalog(), loadPreps(), loadCupons()]).catch(() => {});
   const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
   if (error) { S.view = 'garage'; S.projects = []; render(); return fail(error); }
   S.projects = data; S.view = 'garage'; render();
-  if (S.user.user_metadata && S.user.user_metadata.preparador && !S.prep) { try { if (!localStorage.getItem('pp_prep_conv')) { localStorage.setItem('pp_prep_conv', '1'); return openPerfil(true); } } catch (e) {} }
+  try {
+    if (S.user.user_metadata && S.user.user_metadata.preparador && !S.prep && !localStorage.getItem('pp_prep_conv')) { localStorage.setItem('pp_prep_conv', '1'); return openPerfil(true); }
+    if (!isPro() && !localStorage.getItem('pp_planos_visto')) { localStorage.setItem('pp_planos_visto', '1'); S.planoMotivo = 'Bem-vindo ao Prep.pro! Você começa no plano grátis. Veja o que o PRO libera:'; return openPlanos(); }
+  } catch (e) {}
 }
 function viewGarage() {
   const cards = S.projects.map(p => {
@@ -313,7 +330,7 @@ function viewGarage() {
     </button>`;
   }).join('');
   return `
-  <div class="row between"><div class="brand">PREP<b>.PRO</b></div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP<b>.PRO</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
   ${S.projects.length ? cards : `
     <div class="card hot">
@@ -322,12 +339,14 @@ function viewGarage() {
       <button class="btn" id="preset">CRIAR O CAMINHÃOZINHO</button>
     </div>`}
   <button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>
+  ${cuponsCard()}
   ${S.projects.length ? bannerCard(bannerFor('garagem')) : ''}`;
 }
 
 // ---------------- Novo projeto (1ª e 2ª marchas) ----------------
 async function loadCars() { if (S.cars.length) return; const { data, error } = await sb.from('car_models').select('*').order('modelo'); if (error) return fail(error); S.cars = data || []; }
 async function startWizard(preset) {
+  if (!isPro() && S.projects.length >= 1) return needPro('No plano grátis você acompanha 1 projeto. No PRO, quantos sonhos quiser.');
   await loadCars();
   const s10 = S.cars.find(c => c.modelo === 'S10' && c.motor === '4.3 V6');
   S.draft = preset
@@ -1115,6 +1134,8 @@ async function openAdmin(tab) {
   await Promise.all([loadCatalog(), loadCars()]);
   if (S.atab === 'cliques') await loadClicks();
   if (S.atab === 'preparadores') await loadAdminPreps();
+  if (S.atab === 'cupons') await loadAdminCupons();
+  if (S.atab === 'usuarios') await loadAdminUsers();
   render();
 }
 function tplItemName(id) { for (const s of S.adminTpl || []) { const t = (s.template_items || []).find(t => t.id === id); if (t) return t.nome; } return ''; }
@@ -1135,6 +1156,10 @@ function viewAdmin() {
         <span class="small">${esc(b.titulo)}</span><span class="tiny mut">Aparece em: ${posLabel(b)}</span></button>`).join('') || '<p class="small mut">Nenhum banner ainda.</p>'}`;
   } else if (t === 'preparadores') {
     body = viewAdminPreps();
+  } else if (t === 'cupons') {
+    body = viewAdminCupons();
+  } else if (t === 'usuarios') {
+    body = viewAdminUsers();
   } else {
     const c = S.clicks || { links: {}, banners: {} };
     const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
@@ -1144,7 +1169,7 @@ function viewAdmin() {
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
   return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
-    <div class="tabs" style="grid-template-columns:repeat(4,1fr)"><button class="${t === 'ofertas' ? 'on' : ''}" data-atab="ofertas">Ofertas</button><button class="${t === 'parceiros' ? 'on' : ''}" data-atab="parceiros">Parceiros</button><button class="${t === 'preparadores' ? 'on' : ''}" data-atab="preparadores">Preparad.</button><button class="${t === 'cliques' ? 'on' : ''}" data-atab="cliques">Cliques</button></div>
+    <div class="tabs">${[['ofertas', 'Ofertas'], ['cupons', 'Cupons'], ['parceiros', 'Banners'], ['preparadores', 'Preparad.'], ['usuarios', 'Usuários'], ['cliques', 'Cliques']].map(x => `<button class="${t === x[0] ? 'on' : ''}" data-atab="${x[0]}">${x[1]}</button>`).join('')}</div>
     ${body}`;
 }
 function posLabel(b) { if (b.posicao === 'stage') { const s = (S.adminTpl || []).find(x => x.ordem === b.stage_ordem); return s ? s.nome : 'Stage ' + b.stage_ordem; } return b.posicao === 'garagem' ? 'Garagem' : 'Aba Gastos'; }
@@ -1335,14 +1360,14 @@ async function openPerfil(prepAberto) {
   const pf = S.perfil || {}, pr = S.prep;
   let contatos = 0;
   if (pr) { const { data } = await sb.from('preparador_contatos').select('id').eq('preparador_id', S.user.id); contatos = (data || []).length; }
-  S.pf = { nome: pf.nome || '', celular: pf.celular || '', cidade: pf.cidade || '', uf: pf.uf || '',
+  S.pf = { ofertas: !!pf.aceita_ofertas, nome: pf.nome || '', celular: pf.celular || '', cidade: pf.cidade || '', uf: pf.uf || '',
     prep: pr ? pr.ativo : !!prepAberto, oficina: pr ? pr.nome_oficina : (pf.nome || ''), pcidade: pr ? pr.cidade : (pf.cidade || ''), puf: pr ? pr.uf : (pf.uf || ''),
     whatsapp: pr ? pr.whatsapp || '' : (pf.celular || ''), instagram: pr ? pr.instagram || '' : '', esp: pr ? (pr.especialidades || []).slice() : [], desc: pr ? pr.descricao || '' : '', contatos };
   S.view = 'perfil'; render(); window.scrollTo(0, 0);
 }
 function keepPf() {
   const g = id => document.getElementById(id), f = S.pf; if (!f || !g('pfnome')) return;
-  f.nome = g('pfnome').value; f.celular = g('pfcel').value; f.cidade = g('pfcid').value; f.uf = g('pfuf').value; f.prep = g('pfprep').checked;
+  f.nome = g('pfnome').value; f.celular = g('pfcel').value; f.cidade = g('pfcid').value; f.uf = g('pfuf').value; f.prep = g('pfprep').checked; f.ofertas = g('pfofertas').checked;
   if (g('pfof')) { f.oficina = g('pfof').value; f.pcidade = g('pfpcid').value; f.puf = g('pfpuf').value; f.whatsapp = g('pfwa').value; f.instagram = g('pfig').value; f.desc = g('pfdesc').value; }
 }
 const ufSel = (id, v) => `<select id="${id}"><option value="">UF</option>${UFS.map(u => `<option ${v === u ? 'selected' : ''}>${u}</option>`).join('')}</select>`;
@@ -1354,7 +1379,9 @@ function viewPerfil() {
     <label class="f">Celular<input id="pfcel" value="${esc(f.celular)}" inputmode="tel" placeholder="(65) 99999-9999"></label>
     <div class="row" style="gap:8px;align-items:flex-end"><label class="f" style="flex:1">Cidade<input id="pfcid" value="${esc(f.cidade)}" placeholder="Ex.: Cuiabá"></label><label class="f" style="width:96px">UF${ufSel('pfuf', f.uf)}</label></div>
     <span class="tiny mut">Sua cidade serve para mostrar preparadores perto de você.</span>
+    <label class="row" style="gap:10px"><input id="pfofertas" type="checkbox" ${f.ofertas ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc);flex:none"><span class="small">Receber cupons e ofertas de parceiros</span></label>
   </div>
+  <button class="card pcard" id="verplanos" style="gap:4px"><div class="row between"><b>Seu plano</b><span class="tiny" style="font-weight:700;color:${isPro() ? 'var(--ok2)' : 'var(--mut)'}">${isPro() ? 'PRO' : 'GRÁTIS'}</span></div><span class="small mut">${isPro() ? (S.perfil && S.perfil.pro_ate ? 'Ativo até ' + fmtData(S.perfil.pro_ate) : 'Conta de administrador') : 'Conheça o PRO: os cupons pagam a assinatura ›'}</span></button>
   <div class="card" style="${f.prep ? 'border-color:#5A3520' : ''}">
     <label class="row" style="gap:12px;align-items:flex-start"><input id="pfprep" type="checkbox" ${f.prep ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Também sou preparador</b><br><span class="small mut">Seus dados aparecem para quem busca preparador na sua cidade. Pode desmarcar quando quiser.</span></span></label>
     ${f.prep ? `
@@ -1375,7 +1402,7 @@ function viewPerfil() {
 }
 async function savePerfil() {
   keepPf(); const f = S.pf;
-  const { error } = await sb.from('profiles').update({ nome: f.nome.trim() || null, celular: f.celular.trim() || null, cidade: f.cidade.trim() || null, uf: f.uf || null }).eq('id', S.user.id);
+  const { error } = await sb.from('profiles').update({ nome: f.nome.trim() || null, celular: f.celular.trim() || null, cidade: f.cidade.trim() || null, uf: f.uf || null, aceita_ofertas: f.ofertas }).eq('id', S.user.id);
   if (error) return fail(error);
   if (f.prep) {
     if (!f.oficina.trim() || !f.pcidade.trim() || !f.puf) return toast('Preencha nome da oficina, cidade e UF onde atende.');
@@ -1419,13 +1446,185 @@ async function adminDestaque(uid, tirar) {
   toast(tirar ? 'Destaque removido.' : 'Destaque até ' + fmtData(ate) + ' ✓'); await openAdmin('preparadores');
 }
 
+// ---------------- Plano PRO e cupons ----------------
+const PRO_PRECO = 19.90;
+const PERFIL_USO = [['entusiasta', 'Entusiasta, tenho ou quero um projeto'], ['preparador', 'Preparador ou mecânico'], ['loja', 'Loja ou oficina'], ['outro', 'Outro']];
+const COMO = ['Instagram', 'YouTube', 'TikTok', 'Indicação de amigo', 'Preparador ou oficina', 'Google', 'Outro'];
+const isPro = () => S.isAdmin || !!(S.perfil && S.perfil.pro_ate && new Date(S.perfil.pro_ate) > new Date());
+const PLANO = [
+  ['Projetos e sonhos', '1', 'Ilimitados'],
+  ['As 5 Marchas, gastos e caixinha', '✓', '✓'],
+  ['Gráficos de orçado x realizado', 'Básicos', 'Completos'],
+  ['Cupons de desconto dos parceiros', 'Alguns', 'Todos'],
+  ['Exportar gastos para planilha', '—', '✓'],
+  ['Média de gastos de projetos parecidos', '—', 'em breve'],
+  ['Plano montado por IA para o seu carro', '—', 'em breve'],
+  ['Lançar gasto por áudio ou texto', '—', 'em breve']
+];
+async function loadCupons() {
+  const [c, k] = await Promise.all([sb.from('cupons').select('*').order('criado_em', { ascending: false }), sb.from('cupom_codigos').select('*')]);
+  const hoje = today();
+  S.cupons = (c.data || []).filter(x => x.ativo && (!x.valido_ate || x.valido_ate >= hoje));
+  S.codigos = {}; (k.data || []).forEach(r => S.codigos[r.cupom_id] = r.codigo);
+}
+const economiaCupons = () => sumBy(S.cupons || [], c => c.economia_media);
+function needPro(motivo) { S.planoMotivo = motivo; return openPlanos(); }
+async function openPlanos() { if (S.view !== 'planos') S.backTo = S.view; await Promise.all([loadCatalog(), loadCupons()]).catch(() => {}); S.view = 'planos'; render(); window.scrollTo(0, 0); }
+function viewPlanos() {
+  const eco = economiaCupons(), pro = isPro(), pf = S.perfil || {};
+  return `<div class="row"><button class="icon-btn" id="plback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Planos</h1></div>
+  ${S.planoMotivo ? `<div class="card" style="border-color:#5A3520"><span class="small">${esc(S.planoMotivo)}</span></div>` : ''}
+  ${pro ? `<div class="card" style="border-color:#2E6B4A"><b style="color:var(--ok2)">Você é PRO ✓</b><span class="small mut">${S.isAdmin && !pf.pro_ate ? 'Conta de administrador.' : 'Ativo até ' + fmtData(pf.pro_ate) + '.'}</span></div>` : ''}
+  <div class="card" style="gap:6px">
+    <span class="tiny" style="letter-spacing:1.5px;font-weight:700;color:var(--acc2)">O PRO SE PAGA</span>
+    <h2 style="margin:0">${eco >= PRO_PRECO ? `Os cupons economizam ${brl(eco)}. O PRO custa ${brl2(PRO_PRECO)} por mês.` : 'Cupons de desconto em lojas e preparadores parceiros.'}</h2>
+    <span class="small mut" style="line-height:1.4">Negociamos descontos exclusivos com parceiros. Usando um ou dois cupons numa compra de peça, a assinatura já se paga.</span>
+    ${(S.cupons || []).length ? `<button class="link" id="cupons" style="align-self:flex-start;padding:4px 0">Ver os ${S.cupons.length} cupons ›</button>` : ''}
+  </div>
+  <div class="card" style="gap:0;padding:6px 14px">
+    <div class="item" style="font-weight:700"><span class="nm"></span><span style="width:70px;text-align:center" class="small">Grátis</span><span style="width:80px;text-align:center;color:var(--acc2)" class="small">PRO</span></div>
+    ${PLANO.map(r => `<div class="item"><span class="nm small">${r[0]}</span><span style="width:70px;text-align:center" class="small mut">${r[1]}</span><span style="width:80px;text-align:center" class="small">${r[2]}</span></div>`).join('')}
+  </div>
+  ${pro ? '' : `<div class="card" style="border-color:#5A3520;gap:8px">
+    <div class="row between"><b>Prep.pro PRO</b><b style="font-size:22px">${brl2(PRO_PRECO)}<span class="small mut" style="font-weight:500">/mês</span></b></div>
+    <span class="small mut">Sem fidelidade. Cancele quando quiser.</span>
+    ${pf.quer_pro_em ? '<span class="small" style="color:var(--ok2)">Interesse registrado ✓ Avisamos assim que o pagamento abrir.</span>' : '<button class="btn" id="querpro">QUERO SER PRO</button>'}
+    <span class="tiny mut">O pagamento pelo app abre em breve. Até lá, você usa tudo do plano grátis normalmente.</span>
+  </div>
+  <button class="btn ghost" id="plback2">Continuar no grátis</button>`}`;
+}
+async function querPro() {
+  const { error } = await sb.from('profiles').update({ quer_pro_em: new Date().toISOString() }).eq('id', S.user.id);
+  if (error) return fail(error);
+  toast('Anotado! Avisamos quando o PRO abrir.'); S.planoMotivo = null; await openPlanos();
+}
+function planosBack() { S.planoMotivo = null; if (S.backTo === 'project' && S.P) { S.view = 'project'; return render(); } if (S.backTo === 'perfil') return openPerfil(); return loadGarage(); }
+async function openCupons() { if (S.view !== 'cupons') S.cupBack = S.view; await loadCupons(); S.view = 'cupons'; render(); window.scrollTo(0, 0); }
+function viewCupons() {
+  const l = S.cupons || [], eco = economiaCupons();
+  return `<div class="row"><button class="icon-btn" id="cpback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Cupons</h1></div>
+  <span class="small mut">Descontos negociados pelo Prep.pro com parceiros.${eco ? ' Economia média somada: <b style="color:var(--fg)">' + brl(eco) + '</b>.' : ''}</span>
+  ${l.length ? l.map(c => { const cod = S.codigos[c.id];
+    return `<div class="card" style="gap:6px">
+      <div class="row between"><span class="tiny" style="letter-spacing:1.5px;font-weight:700;color:var(--mut)">${esc(c.parceiro.toUpperCase())}</span>${c.so_pro ? '<span class="tiny" style="color:var(--acc2);font-weight:700">PRO</span>' : ''}</div>
+      <b style="font-size:24px;color:var(--acc2)">${esc(c.desconto)}</b>
+      <b>${esc(c.titulo)}</b>
+      ${c.descricao ? `<span class="small mut" style="line-height:1.4">${esc(c.descricao)}</span>` : ''}
+      <span class="tiny mut">${c.economia_media ? 'Economia média de ' + brl(c.economia_media) : ''}${c.economia_media && c.valido_ate ? ' · ' : ''}${c.valido_ate ? 'Válido até ' + fmtData(c.valido_ate + 'T12:00:00') : ''}</span>
+      ${cod ? `<div class="row" style="gap:8px"><div style="flex:1;border:1px dashed var(--line2);border-radius:10px;padding:10px 12px;font:700 17px 'Barlow Condensed',Barlow,sans-serif;letter-spacing:1.5px">${esc(cod)}</div><button class="btn sm" data-cpcopy="${c.id}">Copiar</button></div>
+        ${c.url ? `<button class="btn ghost sm" data-cpgo="${c.id}">Ir para a loja</button>` : ''}`
+      : `<div class="row between" style="gap:8px;background:var(--card2);border-radius:10px;padding:10px 12px"><span class="small mut">Código exclusivo para assinantes PRO</span><button class="link" id="verplanos" style="padding:0">Ver planos</button></div>`}
+    </div>`; }).join('') : '<div class="card"><b>Em breve</b><span class="small mut">Estamos fechando os primeiros cupons com parceiros.</span></div>'}`;
+}
+function usarCupom(id, abrir) {
+  const c = (S.cupons || []).find(x => x.id === id), cod = S.codigos[id]; if (!c) return;
+  if (!abrir && cod) { try { navigator.clipboard.writeText(cod).catch(() => {}); } catch (e) {} toast('Código ' + cod + ' copiado ✓'); }
+  if (abrir && c.url) window.open(c.url, '_blank', 'noopener');
+  sb.from('cupom_usos').insert({ cupom_id: id, user_id: S.user.id }).then(() => {});
+}
+function cuponsCard() {
+  const n = (S.cupons || []).length; if (!n) return '';
+  const eco = economiaCupons();
+  return `<button class="card pcard" id="cupons" style="gap:4px">
+    <div class="row between"><b>Cupons de parceiros</b><span class="tiny" style="color:var(--acc2);font-weight:700">${n} ${n > 1 ? 'CUPONS' : 'CUPOM'}</span></div>
+    <span class="small mut">${eco ? 'Até ' + brl(eco) + ' de economia em peças e serviços.' : 'Descontos em peças e serviços.'}${isPro() ? '' : ' Com o PRO, você vê todos.'}</span>
+  </button>`;
+}
+// Termos (sobreposição: não apaga o que a pessoa já digitou no cadastro)
+function showTermos() {
+  document.body.insertAdjacentHTML('beforeend', `<div id="termosov" style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center">
+  <div class="card" style="max-width:560px;width:100%;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;background:#17191C;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);gap:10px">
+    <div class="row between"><h2 style="margin:0">Termos de uso e privacidade</h2><button class="x" id="termosx" aria-label="Fechar">×</button></div>
+    <span class="tiny mut">Versão preliminar · outubro de 2026</span>
+    <span class="small" style="line-height:1.5">O Prep.pro é uma ferramenta da <b>16X Consultoria Ltda.</b> para planejar projetos de preparação automotiva com o método As 5 Marchas.</span>
+    <b>Seus dados</b>
+    <span class="small mut" style="line-height:1.5">Usamos nome, contato e cidade para criar sua conta, mostrar preparadores perto de você e, se você autorizar, enviar ofertas e cupons. Os dados dos seus projetos (peças, gastos, prazos) podem ser usados de forma anônima e agregada para gerar médias e indicações para todos os usuários. Nunca vendemos seus dados pessoais.</span>
+    <b>Seus direitos (LGPD)</b>
+    <span class="small mut" style="line-height:1.5">Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento, e desmarcar o recebimento de ofertas no seu perfil.</span>
+    <b>Links e parceiros</b>
+    <span class="small mut" style="line-height:1.5">Alguns links de produtos são de afiliados e banners e destaques são espaços pagos por parceiros, sempre identificados. Preços e condições são de responsabilidade das lojas e preparadores.</span>
+    <b>Plano PRO</b>
+    <span class="small mut" style="line-height:1.5">Assinatura mensal, sem fidelidade. O plano grátis continua disponível.</span>
+    <button class="btn" id="termosok">ENTENDI</button>
+  </div></div>`);
+  const ov = document.getElementById('termosov');
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('#termosx,#termosok')) ov.remove(); });
+}
+// Admin · cupons e usuários
+async function loadAdminCupons() {
+  const [c, k, u] = await Promise.all([sb.from('cupons').select('*').order('criado_em', { ascending: false }), sb.from('cupom_codigos').select('*'), sb.from('cupom_usos').select('cupom_id')]);
+  S.aCupons = c.data || []; S.aCod = {}; (k.data || []).forEach(r => S.aCod[r.cupom_id] = r.codigo);
+  S.aCupUso = {}; (u.data || []).forEach(r => S.aCupUso[r.cupom_id] = (S.aCupUso[r.cupom_id] || 0) + 1);
+}
+function viewAdminCupons() {
+  return `<button class="btn" data-acupom="new">+ NOVO CUPOM</button>
+  ${(S.aCupons || []).map(c => `<button class="card pcard" data-acupom="${c.id}" style="opacity:${c.ativo ? 1 : .5}">
+    <div class="row between"><b>${esc(c.parceiro)} · ${esc(c.desconto)}</b><span class="tiny mut">${c.ativo ? (c.so_pro ? 'PRO' : 'todos') : 'pausado'}</span></div>
+    <span class="small">${esc(c.titulo)}</span><span class="tiny mut">Código: ${esc(S.aCod[c.id] || '—')} · ${S.aCupUso[c.id] || 0} usos</span></button>`).join('') || '<p class="small mut">Nenhum cupom ainda.</p>'}`;
+}
+function openCupomForm(id) {
+  const c = id === 'new' ? null : (S.aCupons || []).find(x => x.id === id);
+  S.acf = c ? Object.assign({}, c, { codigo: S.aCod[c.id] || '' }) : { id: null, parceiro: '', titulo: '', desconto: '', codigo: '', url: '', descricao: '', economia_media: null, so_pro: true, valido_ate: '', ativo: true };
+  S.view = 'acupom'; S.armed = null; render(); window.scrollTo(0, 0);
+}
+function viewCupomForm() {
+  const f = S.acf;
+  return `<div class="row"><button class="icon-btn" data-atab="cupons" aria-label="Voltar">${back}</button><h1 style="font-size:28px">${f.id ? 'Editar cupom' : 'Novo cupom'}</h1></div>
+  <label class="f">Parceiro<input id="acparc" value="${esc(f.parceiro)}" placeholder="Ex.: RS Performance"></label>
+  <label class="f">Desconto (o que aparece em destaque)<input id="acdesc" value="${esc(f.desconto)}" placeholder="Ex.: 10% OFF, Frete grátis"></label>
+  <label class="f">Título<input id="actit" value="${esc(f.titulo)}" placeholder="Ex.: Em toda a linha de turbinas"></label>
+  <label class="f">Código do cupom<input id="accod" value="${esc(f.codigo)}" placeholder="Ex.: PREPPRO10" autocapitalize="characters"></label>
+  <label class="f">Link da loja (opcional)<input id="acurl" value="${esc(f.url || '')}" placeholder="https://…" inputmode="url"></label>
+  <label class="f">Detalhes (opcional)<textarea id="acdet" placeholder="Regras, valor mínimo…">${esc(f.descricao || '')}</textarea></label>
+  <div class="row" style="gap:8px"><label class="f" style="flex:1">Economia média (R$)<input id="aceco" value="${esc(fmtIn(f.economia_media))}" inputmode="decimal" placeholder="Ex.: 150"></label><label class="f" style="flex:1">Válido até<input id="acval" type="date" value="${esc(f.valido_ate || '')}"></label></div>
+  <span class="tiny mut">A economia média aparece no "o PRO se paga". Seja conservador.</span>
+  <label class="row" style="gap:10px"><input id="acpro" type="checkbox" ${f.so_pro ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc)"> Só para assinantes PRO</label>
+  <label class="row" style="gap:10px"><input id="acativo" type="checkbox" ${f.ativo ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc)"> Cupom ativo</label>
+  <button class="btn" id="acsave">SALVAR CUPOM</button>
+  ${f.id ? `<button class="btn danger ${armed('acdel') ? 'armed' : ''}" id="acdel">${armed('acdel') ? 'Toque de novo para excluir' : 'Excluir cupom'}</button>` : ''}`;
+}
+async function saveCupom() {
+  const g = id => document.getElementById(id), f = S.acf;
+  const row = { parceiro: g('acparc').value.trim(), desconto: g('acdesc').value.trim(), titulo: g('actit').value.trim(), url: g('acurl').value.trim() || null, descricao: g('acdet').value.trim() || null, economia_media: parseMoney(g('aceco').value), valido_ate: g('acval').value || null, so_pro: g('acpro').checked, ativo: g('acativo').checked };
+  const codigo = g('accod').value.trim();
+  if (!row.parceiro || !row.desconto || !row.titulo) return toast('Preencha parceiro, desconto e título.');
+  if (row.url && !/^https?:\/\//i.test(row.url)) return toast('O link precisa começar com https://');
+  let id = f.id;
+  if (id) { const { error } = await sb.from('cupons').update(row).eq('id', id); if (error) return fail(error); }
+  else { const { data, error } = await sb.from('cupons').insert(row).select().single(); if (error) return fail(error); id = data.id; }
+  const r = codigo ? await sb.from('cupom_codigos').upsert({ cupom_id: id, codigo }, { onConflict: 'cupom_id' }) : await sb.from('cupom_codigos').delete().eq('cupom_id', id);
+  if (r.error) return fail(r.error);
+  toast('Cupom salvo ✓'); await openAdmin('cupons');
+}
+async function deleteCupom() { if (!arm('acdel')) return; const { error } = await sb.from('cupons').delete().eq('id', S.acf.id); if (error) return fail(error); toast('Cupom excluído.'); await openAdmin('cupons'); }
+async function loadAdminUsers() { const { data } = await sb.from('profiles').select('*').order('criado_em', { ascending: false }); S.aUsers = data || []; }
+function viewAdminUsers() {
+  const l = S.aUsers || [], pros = l.filter(u => u.pro_ate && new Date(u.pro_ate) > new Date()).length, quer = l.filter(u => u.quer_pro_em).length;
+  const uso = Object.fromEntries(PERFIL_USO.map(p => [p[0], p[1].split(',')[0]]));
+  return `<div class="kpis"><div class="kpi"><span>Usuários</span><b>${l.length}</b></div><div class="kpi"><span>PRO · querem PRO</span><b>${pros} · ${quer}</b></div></div>
+  ${l.map(u => { const pro = u.pro_ate && new Date(u.pro_ate) > new Date();
+    return `<div class="card" style="gap:6px">
+      <div class="row between"><b>${esc(u.nome || 'Sem nome')}</b><span class="tiny" style="font-weight:700;color:${pro ? 'var(--ok2)' : 'var(--mut)'}">${u.is_admin ? 'ADMIN' : pro ? 'PRO' : 'GRÁTIS'}</span></div>
+      <span class="tiny mut">${[u.cidade && (u.cidade + (u.uf ? '/' + u.uf : '')), uso[u.perfil_uso], u.como_conheceu && 'veio do ' + u.como_conheceu, u.aceita_ofertas ? 'aceita ofertas' : null, 'desde ' + fmtData(u.criado_em)].filter(Boolean).map(esc).join(' · ')}${u.quer_pro_em ? ' · <b style="color:var(--acc2)">quer PRO</b>' : ''}</span>
+      ${u.celular ? `<span class="small">${esc(u.celular)}</span>` : ''}
+      ${u.is_admin ? '' : `<div class="row" style="gap:8px"><button class="btn sm" data-apro="${u.id}">+30 dias PRO</button>${pro ? `<button class="btn ghost sm" data-aprox="${u.id}">Tirar PRO</button>` : ''}</div>`}
+    </div>`; }).join('')}`;
+}
+async function adminPro(uid, tirar) {
+  const u = (S.aUsers || []).find(x => x.id === uid); if (!u) return;
+  const base = u.pro_ate && new Date(u.pro_ate) > new Date() ? new Date(u.pro_ate) : new Date();
+  const ate = tirar ? null : new Date(base.getTime() + 30 * 864e5).toISOString();
+  const { error } = await sb.from('profiles').update({ pro_ate: ate }).eq('id', uid); if (error) return fail(error);
+  toast(tirar ? 'PRO removido.' : 'PRO até ' + fmtData(ate) + ' ✓'); await openAdmin('usuarios');
+}
+
 // ---------------- Gráficos ----------------
 const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
 const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
 const tipBox = () => '<div class="tipbox tiny" style="min-height:16px;color:var(--mut2)">Toque num item para ver o valor</div>';
 function viewGraficos() {
   if (!S.P.exp.length) return '<div class="card"><b>Sem dados ainda</b><span class="small mut">Lance gastos (previstos ou realizados) para ver os gráficos.</span></div>';
-  return chartStages() + chartTipo() + chartAcum();
+  return chartStages() + chartTipo() + (isPro() ? chartAcum() : `<div class="card" style="gap:6px"><div class="row between"><b>Gasto acumulado x orçamento</b><span class="tiny" style="color:var(--acc2);font-weight:700">PRO</span></div><span class="small mut">Veja a curva dos seus gastos no tempo, comparada com o orçamento.</span><button class="btn ghost sm" id="verplanos">Conhecer o PRO</button></div>`);
 }
 function chartStages() {
   const P = S.P;
@@ -1500,7 +1699,7 @@ function chartAcum() {
 function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
-    : v === 'perfil' ? viewPerfil() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+    : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
   $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
@@ -1524,6 +1723,19 @@ $app.addEventListener('click', async ev => {
   if (ds.banner) return openBanner(ds.banner);
   if (id === 'admin') return openAdmin('ofertas');
   if (id === 'perfil') return openPerfil();
+  if (id === 'termos') { ev.preventDefault(); return showTermos(); }
+  if (id === 'verplanos') return openPlanos();
+  if (id === 'plback' || id === 'plback2') return planosBack();
+  if (id === 'querpro') return querPro();
+  if (id === 'cupons') return openCupons();
+  if (id === 'cpback') return S.cupBack === 'planos' ? openPlanos() : loadGarage();
+  if (ds.cpcopy) return usarCupom(ds.cpcopy, false);
+  if (ds.cpgo) return usarCupom(ds.cpgo, true);
+  if (ds.acupom) return openCupomForm(ds.acupom);
+  if (id === 'acsave') return saveCupom();
+  if (id === 'acdel') return deleteCupom();
+  if (ds.apro) return adminPro(ds.apro, false);
+  if (ds.aprox) return adminPro(ds.aprox, true);
   if (id === 'pfback') return S.backTo === 'project' && S.P ? (S.view = 'project', render()) : loadGarage();
   if (id === 'pfsave') return savePerfil();
   if (id === 'pfinteresse') return prepInteresse();
@@ -1588,7 +1800,7 @@ $app.addEventListener('click', async ev => {
   if (id === 'closecyc') return closeCycle();
   if (ds.newexp) return openForm(null, ds.newexp);
   if (ds.exp) { const e = S.P.exp.find(x => x.id === ds.exp); if (e) openForm(e); return; }
-  if (id === 'copytsv') return copyTsv();
+  if (id === 'copytsv') return isPro() ? copyTsv() : needPro('Exportar os gastos para planilha é do plano PRO.');
   if (id === 'fback') { S.view = 'project'; S.tab = S.formBack || 'gastos'; S.form = null; return render(); }
   if (ds.ftipo) { keepForm(); S.form.tipo = ds.ftipo; return render(); }
   if (ds.fstage !== undefined) { keepForm(); if (S.form.stage_id !== (ds.fstage || null)) S.form.project_item_id = null; S.form.stage_id = ds.fstage || null; return render(); }
