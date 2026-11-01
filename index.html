@@ -26,6 +26,16 @@ button:active:not(:disabled),.chip:active{transform:scale(.97);filter:brightness
 .pcard.abrindo{border-color:var(--acc);filter:brightness(1.15);pointer-events:none}
 .pcard .abrindo-tag{display:none}
 .pcard{position:relative}
+.gcard{gap:12px;cursor:pointer}
+.hero{position:relative;height:168px;margin:-4px -4px 0;border-radius:12px;overflow:hidden;background:radial-gradient(120% 90% at 50% 35%,#24262B 0%,#141518 70%);display:flex;align-items:center;justify-content:center;padding:0 0 64px;background-size:cover;background-position:center}
+.hero.foto{padding:0}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.15) 55%,rgba(10,11,13,.92) 100%);pointer-events:none}
+.hero-txt{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;display:flex;flex-direction:column;gap:2px}
+.hero-txt h2{margin:0;font-size:28px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.hero-txt span{font:500 13px Barlow,sans-serif;color:#D8D5CF}
+.hero-marcha{position:absolute;top:10px;right:10px;z-index:1;background:rgba(14,15,17,.75);border:1px solid #3A3E45;border-radius:999px;padding:4px 10px;font:600 12px Barlow,sans-serif;color:var(--fg)}
+.hero-cam{position:absolute;top:10px;left:10px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(14,15,17,.75);border:1px solid #3A3E45;border-radius:999px;padding:6px 10px;color:var(--fg);font:600 12px Barlow,sans-serif;min-height:32px}
+.gcard .abrindo-tag{z-index:3;top:auto;bottom:12px;right:12px;background:rgba(14,15,17,.85);border-radius:999px;padding:4px 10px}
 .usogrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .uso{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px;color:var(--mut)}
 .uso b{color:var(--fg);font:700 15px Barlow,sans-serif}.uso span{font:500 12px/1.3 Barlow,sans-serif;color:var(--mut)}
@@ -209,7 +219,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '8.8';
+const APP_VERSION = '9.0';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -345,9 +355,9 @@ async function loadGarage() {
   try { localStorage.setItem('pp_conta', '1'); } catch (e) {}
   await Promise.all([loadCatalog(), loadPreps(), loadCupons()]).catch(() => {});
   if (precisaCompletar()) { S.view = 'completar'; render(); window.scrollTo(0, 0); return; }
-  const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
+  const { data, error } = await sb.from('projects').select('*, car_models(marca,modelo,versao,motor,tipo), project_items(status), project_expenses(valor_previsto,valor_realizado)').order('criado_em');
   if (error) { S.view = 'garage'; S.projects = []; render(); return fail(error); }
-  S.projects = data; S.view = 'garage'; render();
+  S.projects = data; S.view = 'garage'; render(); loadCapas().catch(() => {});
   try {
     if (S.user.user_metadata && S.user.user_metadata.preparador && !S.prep && !localStorage.getItem('pp_prep_conv')) { localStorage.setItem('pp_prep_conv', '1'); return openPerfil(true); }
     if (!isPro() && !localStorage.getItem('pp_planos_visto')) { localStorage.setItem('pp_planos_visto', '1'); S.planoMotivo = 'Bem-vindo ao Prep.pro! Você começa no plano grátis. Veja o que o PRO libera:'; return openPlanos(); }
@@ -360,18 +370,25 @@ function viewGarage() {
     const prev = sumBy(ex, e => e.valor_previsto), real = sumBy(ex, e => e.valor_realizado);
     const ref = num(p.orcamento_total) || prev;
     const pct = ref ? Math.min(100, Math.round(real / ref * 100)) : 0;
-    return `<button class="card pcard" data-open="${p.id}">
-      <span class="abrindo-tag"><i class="spin"></i>Abrindo…</span>
-      <div class="row between"><div class="row"><span class="dot" style="background:${esc(p.cor || '#9A2A2A')}"></span><h2>${esc(p.nome)}</h2></div><span class="tiny mut">${p.marcha === 6 ? 'Acerto fino' : p.marcha + 'ª marcha'}</span></div>
-      <span class="small mut">${esc(carLine(p))} · ${esc(goalName(p.objetivo))}</span>
+    const foto = S.capas && S.capas[p.id], tipo = (p.car_models && p.car_models.tipo) || (/\b(ram|hilux|s10|ranger|toro|strada|amarok|frontier|l200|saveiro|montana|f-?\d{3,4}|dakota|silverado|picape|caminhonete)\b/i.test((p.ficha && p.ficha.obs) || '') ? 'pickup' : null);
+    return `<div class="card pcard gcard" data-open="${p.id}" role="button" tabindex="0" aria-label="Abrir ${esc(p.nome)}">
+      <div class="hero ${foto ? 'foto' : ''}" ${foto ? `style="background-image:url('${esc(foto)}')"` : ''}>
+        ${foto ? '' : silhueta(tipo)}
+        <span class="hero-marcha">${p.marcha === 6 ? 'Acerto fino' : p.marcha + 'ª marcha'}</span>
+        <button class="hero-cam" data-capafor="${p.id}" aria-label="${foto ? 'Trocar foto' : 'Adicionar foto do carro'}">${CAM}${foto ? '' : '<span>Foto do carro</span>'}</button>
+        <div class="hero-txt"><h2>${esc(p.nome)}</h2><span>${esc(carLine(p))} · ${esc(goalName(p.objetivo))}</span></div>
+        <span class="abrindo-tag"><i class="spin"></i>Abrindo…</span>
+      </div>
       ${segs(p.marcha)}
+      <span class="small" style="color:var(--acc2);font-weight:600">${esc(proximoPasso(p))} ›</span>
       <div class="row between small"><span class="mut">${d} de ${t} itens instalados</span><span class="mut">Gasto <b style="color:var(--fg)">${brl(real)}</b>${ref ? ' de ' + brl(ref) : ''}</span></div>
       <div class="bar ${ref && real > ref ? 'over' : ''}"><i style="width:${pct}%"></i></div>
-    </button>`;
+    </div>`;
   }).join('');
   return `
   <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP<b>.PRO</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
+  ${S.projects.length > 1 || (S.projects[0] && (S.projects[0].project_expenses || []).length) ? (() => { const inv = sumBy(S.projects.flatMap(p => p.project_expenses || []), e => e.valor_realizado); return `<div class="kpis"><div class="kpi"><span>Projetos e sonhos</span><b>${S.projects.length}</b></div><div class="kpi"><span>Investido até agora</span><b>${brl(inv)}</b></div></div>`; })() : ''}
   ${S.projects.length ? cards + '<button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>' : `
     <div class="card hot" style="gap:10px">
       <h2 style="margin:0">${S.perfil && S.perfil.nome ? 'Bem-vindo, ' + esc(S.perfil.nome.split(' ')[0]) + '!' : 'Bem-vindo!'}</h2>
@@ -1728,6 +1745,57 @@ async function salvarCompletar() {
   toast('Cadastro completo ✓'); await loadGarage();
 }
 
+// ---------------- Capa do projeto (foto do carro na garagem) ----------------
+const SIL = {
+  pickup: '<path d="M14 66h12a10 10 0 0 1 20 0h76a10 10 0 0 1 20 0h12v-14l-6-4H98V30H70l-16 18H22l-8 6z"/><path d="M74 34h20v14H60z"/>',
+  hatch: '<path d="M16 66h14a10 10 0 0 1 20 0h64a10 10 0 0 1 20 0h12V50l-10-6-26-16H64L44 44l-22 4-6 6z"/><path d="M66 32h22l16 12H54z"/>',
+  sedan: '<path d="M10 66h16a10 10 0 0 1 20 0h72a10 10 0 0 1 20 0h16V54l-14-6-24-16H72L52 46l-30 4-12 6z"/><path d="M74 36h20l14 10H60z"/>',
+  suv: '<path d="M14 66h12a10 10 0 0 1 20 0h76a10 10 0 0 1 20 0h12V44l-10-4-12-14H58L42 42l-22 4-6 6z"/><path d="M62 30h22v12H50zM88 30h18l10 12H88z"/>',
+  outro: '<path d="M8 66h18a10 10 0 0 1 20 0h74a10 10 0 0 1 20 0h16V56l-18-6-26-14H78L52 50l-34 4-10 4z"/><path d="M80 40h22l14 8H64z"/>'
+};
+function silhueta(tipo) {
+  return `<svg viewBox="0 0 170 80" width="58%" style="max-width:230px" fill="none" stroke="#FF8A4C" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true" opacity=".85">${SIL[tipo] || SIL.outro}<circle cx="36" cy="66" r="8"/><circle cx="132" cy="66" r="8"/><path d="M4 76h162" stroke="#3A3E45"/></svg>`;
+}
+async function loadCapas() {
+  const ids = S.projects.map(p => p.id); if (!ids.length) return;
+  const path = {};
+  S.projects.forEach(p => { if (p.capa) path[p.id] = p.capa; });
+  const falta = ids.filter(id => !path[id]);
+  if (falta.length) {
+    const { data } = await sb.from('diary_entries').select('project_id,fotos,criado_em').order('criado_em', { ascending: false });
+    (data || []).forEach(e => { if (falta.includes(e.project_id) && !path[e.project_id] && (e.fotos || []).length) path[e.project_id] = e.fotos[0]; });
+  }
+  const paths = [...new Set(Object.values(path))]; if (!paths.length) return;
+  const { data: signed } = await sb.storage.from('diario').createSignedUrls(paths, 3600);
+  const url = {}; (signed || []).forEach(s => { if (s.signedUrl) url[s.path] = s.signedUrl; });
+  S.capas = {}; Object.keys(path).forEach(id => { if (url[path[id]]) S.capas[id] = url[path[id]]; });
+  if (S.view === 'garage') render();
+}
+function escolherCapa(pid) {
+  let inp = document.getElementById('capainput');
+  if (!inp) { inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'capainput'; inp.style.display = 'none'; document.body.appendChild(inp); inp.addEventListener('change', () => enviarCapa(inp)); }
+  inp.dataset.pid = pid; inp.value = ''; inp.click();
+}
+async function enviarCapa(inp) {
+  const f = inp.files && inp.files[0], pid = inp.dataset.pid; if (!f || !pid) return;
+  toast('Enviando a foto…'); carregando(true);
+  try {
+    const blob = await shrink(f), path = `${S.user.id}/${pid}/capa-${Date.now()}.jpg`;
+    const { error } = await sb.storage.from('diario').upload(path, blob, { contentType: 'image/jpeg' });
+    if (error) throw error;
+    const p = S.projects.find(x => x.id === pid), antiga = p && p.capa;
+    if (!(await saveProjById(pid, { capa: path }))) return;
+    if (p) p.capa = path;
+    if (antiga && /\/capa-/.test(antiga)) sb.storage.from('diario').remove([antiga]);
+    S.capas = S.capas || {}; S.capas[pid] = URL.createObjectURL(blob); render(); toast('Foto do carro salva ✓');
+  } catch (e) { fail(e); } finally { carregando(false); }
+}
+const CAM = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+function proximoPasso(p) {
+  const m = p.marcha || 1;
+  return m >= 6 ? 'Acerto fino: testar, regular e ajustar' : 'Agora: ' + m + 'ª marcha · ' + MARCHAS[m - 1];
+}
+
 // ---------------- Gráficos ----------------
 const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
 const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
@@ -1836,6 +1904,7 @@ $app.addEventListener('click', async ev => {
   }
   const b = ev.target.closest('button,[data-open],[data-phase],[data-goto]'); if (!b) return;
   const id = b.id, ds = b.dataset;
+  if (ds.capafor) { ev.stopPropagation(); return escolherCapa(ds.capafor); }
   if (ds.offers) return openOffers(ds.offers);
   if (ds.banner) return openBanner(ds.banner);
   if (id === 'admin') return openAdmin('ofertas');
@@ -1989,6 +2058,7 @@ async function buscaCep(el) {
 $app.addEventListener('input', ev => { if (ev.target.dataset && ev.target.dataset.cep) buscaCep(ev.target); });
 $app.addEventListener('change', ev => { if (ev.target.id === 'pfprep') { keepPf(); render(); } });
 $app.addEventListener('keydown', ev => {
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.dataset && ev.target.dataset.open) { ev.preventDefault(); return ev.target.click(); }
   if (ev.key !== 'Enter') return;
   const t = ev.target;
   if (S.view === 'login' && t.tagName === 'INPUT') return doAuth();
