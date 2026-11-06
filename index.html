@@ -219,7 +219,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '9.2';
+const APP_VERSION = '9.2.1';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -803,7 +803,10 @@ function viewForm() {
 }
 async function saveExpense() {
   keepForm(); const f = S.form, P = S.P;
-  if (!f.descricao.trim()) return toast('Escreva a descrição do gasto.');
+  const of = f.product_link_id ? achaLink(f.product_link_id) : null;
+  if (!f.descricao.trim() && of) f.descricao = of.o.nome;
+  if (!f.fornecedor.trim() && of) f.fornecedor = LOJAS[of.l.loja] || '';
+  if (!f.descricao.trim()) return toast('Escreva a descrição do gasto ou escolha a oferta usada.');
   if (f.prev === null && f.real === null) return toast('Preencha o valor previsto, o realizado ou os dois.');
   const row = { project_id: P.p.id, stage_id: f.stage_id || null, project_item_id: f.project_item_id || null, product_link_id: f.product_link_id || null, tipo: f.tipo, descricao: f.descricao.trim(), fornecedor: f.fornecedor.trim() || null, valor_previsto: f.prev, valor_realizado: f.real, data: f.data || today() };
   S.busy = true; render();
@@ -2081,7 +2084,15 @@ async function buscaCep(el) {
   } else if (msg) { msg.textContent = 'Não achei esse CEP. Preencha a cidade e a UF à mão.'; msg.style.color = 'var(--warn)'; }
 }
 $app.addEventListener('input', ev => { if (ev.target.dataset && ev.target.dataset.cep) buscaCep(ev.target); });
-$app.addEventListener('change', ev => { if (ev.target.id === 'pfprep') { keepPf(); render(); } });
+$app.addEventListener('change', ev => {
+  if (ev.target.id === 'foferta' && ev.target.value) {
+    // Escolheu a oferta: completa o que estiver em branco (descrição, loja e valor)
+    const r = achaLink(ev.target.value), g = id => document.getElementById(id); if (!r) return;
+    if (!g('fdesc').value.trim()) g('fdesc').value = r.o.nome;
+    if (!g('fforn').value.trim()) g('fforn').value = LOJAS[r.l.loja] || '';
+    if (r.l.preco_ref && !g('freal').value.trim() && !g('fprev').value.trim()) g('freal').value = fmtIn(num(r.l.preco_ref));
+    keepForm(); toast('Dados da oferta preenchidos ✓');
+  } if (ev.target.id === 'pfprep') { keepPf(); render(); } });
 $app.addEventListener('keydown', ev => {
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.dataset && ev.target.dataset.open) { ev.preventDefault(); return ev.target.click(); }
   if (ev.key !== 'Enter') return;
