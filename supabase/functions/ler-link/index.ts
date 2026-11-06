@@ -54,10 +54,13 @@ export function extrair(html: string) {
   const img = p && p.image ? (Array.isArray(p.image) ? p.image[0] : (p.image.url || p.image)) : null;
   let nome = (p && p.name) || meta(html, ["og:title", "twitter:title"]) || (html.match(/<title[^>]*>([^<]+)<\/title>/i) || [])[1] || null;
   if (nome) nome = decode(String(nome)).replace(/\s*[|\-–]\s*(Mercado Livre|MercadoLivre|Shopee Brasil|AliExpress|Amazon\.com\.br).*$/i, "").trim();
+  // Algumas lojas colocam o preço no título ("Produto - R$ 324,99"): aproveita e limpa o nome
+  let precoTitulo: number | null = null;
+  if (nome) { const mt = nome.match(/\s*[-–|]?\s*R\$\s*([\d.,]+)\s*$/); if (mt) { precoTitulo = preco(mt[1]); nome = nome.slice(0, mt.index).trim(); } }
   return {
     nome,
     imagem: (typeof img === "string" ? img : null) || meta(html, ["og:image", "og:image:secure_url", "twitter:image"]),
-    preco: preco(offer && (offer.price ?? offer.lowPrice)) ?? preco(meta(html, ["product:price:amount", "og:price:amount", "price"])),
+    preco: preco(offer && (offer.price ?? offer.lowPrice)) ?? preco(meta(html, ["product:price:amount", "og:price:amount", "price"])) ?? precoTitulo,
   };
 }
 

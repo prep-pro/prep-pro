@@ -219,7 +219,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '9.1';
+const APP_VERSION = '9.2';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -725,7 +725,7 @@ function viewGastos() {
       const s = P.stages.find(x => x.id === e.stage_id);
       const real = e.valor_realizado !== null && e.valor_realizado !== undefined;
       return `<button class="exp" data-exp="${e.id}">
-        <div class="d"><b>${tag(e.tipo)}${esc(e.descricao)}</b><span>${esc(e.fornecedor || '—')} · ${esc(shortStage(s))} · ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span></div>
+        <div class="d"><b>${tag(e.tipo)}${esc(e.descricao)}${e.product_link_id ? ' <span class="tiny" style="color:var(--acc2);font-weight:700;border:1px solid #5A3520;border-radius:5px;padding:0 4px;vertical-align:1px">OFERTA</span>' : ''}</b><span>${esc(e.fornecedor || '—')} · ${esc(shortStage(s))} · ${new Date(e.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span></div>
         <div class="v"><b style="${real ? '' : 'color:var(--mut);font-style:italic'}">${real ? brl2(e.valor_realizado) : brl2(e.valor_previsto)}</b><span>${real ? (e.valor_previsto ? 'prev. ' + brl(e.valor_previsto) : 'realizado') : 'previsto'}</span></div>
       </button>`;
     }).join('')}</div>
@@ -762,7 +762,7 @@ function copyTsv() {
 // ---------------- Formulário de gasto ----------------
 function openForm(e, preset) {
   const P = S.P;
-  if (e) S.form = { id: e.id, tipo: e.tipo, descricao: e.descricao, fornecedor: e.fornecedor || '', stage_id: e.stage_id, project_item_id: e.project_item_id, prev: e.valor_previsto, real: e.valor_realizado, data: e.data, focus: e.valor_realizado !== null && e.valor_realizado !== undefined ? 'real' : 'prev' };
+  if (e) S.form = { id: e.id, tipo: e.tipo, descricao: e.descricao, fornecedor: e.fornecedor || '', stage_id: e.stage_id, project_item_id: e.project_item_id, product_link_id: e.product_link_id || null, prev: e.valor_previsto, real: e.valor_realizado, data: e.data, focus: e.valor_realizado !== null && e.valor_realizado !== undefined ? 'real' : 'prev' };
   else {
     const [st, mode] = (preset || 'geral|real').split('|');
     S.form = { id: null, tipo: mode === 'mao_de_obra' ? 'mao_de_obra' : 'peca', descricao: '', fornecedor: '', stage_id: st === 'geral' ? null : st, project_item_id: null, prev: null, real: null, data: today(), focus: mode === 'prev' ? 'prev' : 'real' };
@@ -778,6 +778,7 @@ function keepForm() {
   if (g('freal')) f.real = parseMoney(g('freal').value);
   if (g('fdata')) f.data = g('fdata').value || today();
   if (g('fitem')) f.project_item_id = g('fitem').value || null;
+  if (g('foferta')) f.product_link_id = g('foferta').value || null;
 }
 function viewForm() {
   const f = S.form, P = S.P;
@@ -795,6 +796,7 @@ function viewForm() {
   </div>
   <div class="col"><b>Stage</b><div class="chips"><button class="chip xs ${!f.stage_id ? 'on' : ''}" data-fstage="">Geral</button>${P.stages.map(s => `<button class="chip xs ${f.stage_id === s.id ? 'on' : ''}" data-fstage="${s.id}">${esc(shortStage(s))}</button>`).join('')}</div></div>
   ${items.length ? `<label class="f">Item do plano (opcional)<select id="fitem"><option value="">— nenhum —</option>${items.map(x => `<option value="${x.pi.id}" ${f.project_item_id === x.pi.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}</select></label>` : ''}
+  ${ofertaOptions(f)}
   <label class="f">Data<input id="fdata" type="date" value="${esc(f.data)}"></label>
   <button class="btn" id="fsave" ${S.busy ? 'disabled' : ''}>${f.id ? 'SALVAR' : 'LANÇAR'}</button>
   ${f.id ? `<button class="btn danger ${armed('delexp') ? 'armed' : ''}" id="fdel">${armed('delexp') ? 'Toque de novo para excluir' : 'Excluir lançamento'}</button>` : ''}`;
@@ -803,7 +805,7 @@ async function saveExpense() {
   keepForm(); const f = S.form, P = S.P;
   if (!f.descricao.trim()) return toast('Escreva a descrição do gasto.');
   if (f.prev === null && f.real === null) return toast('Preencha o valor previsto, o realizado ou os dois.');
-  const row = { project_id: P.p.id, stage_id: f.stage_id || null, project_item_id: f.project_item_id || null, tipo: f.tipo, descricao: f.descricao.trim(), fornecedor: f.fornecedor.trim() || null, valor_previsto: f.prev, valor_realizado: f.real, data: f.data || today() };
+  const row = { project_id: P.p.id, stage_id: f.stage_id || null, project_item_id: f.project_item_id || null, product_link_id: f.product_link_id || null, tipo: f.tipo, descricao: f.descricao.trim(), fornecedor: f.fornecedor.trim() || null, valor_previsto: f.prev, valor_realizado: f.real, data: f.data || today() };
   S.busy = true; render();
   try {
     if (f.id) {
@@ -1158,7 +1160,7 @@ function offerBtn(x) {
 }
 function openOffers(itemId) {
   const pi = S.P.items.find(i => i.id === itemId); if (!pi) return;
-  const nome = itemName(pi); S.sheet = { nome, list: offersFor(nome, pi.template_item_id) }; render();
+  const nome = itemName(pi); S.sheet = { nome, itemId: pi.id, stageId: pi.stage_id || (pi.template_items && pi.template_items.stage_id) || null, list: offersFor(nome, pi.template_item_id) }; render();
 }
 function viewSheet() {
   const s = S.sheet; if (!s) return '';
@@ -1168,10 +1170,29 @@ function viewSheet() {
       <span class="small mut">${esc(s.nome)}</span>
       ${s.list.map(o => `<div class="card" style="background:var(--card2)">
         <div class="row" style="gap:12px">${o.imagem_url ? `<img src="${esc(o.imagem_url)}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:10px;flex:none">` : ''}<b style="flex:1">${esc(o.nome)}</b></div>
-        ${(o.product_links || []).map(l => `<div class="item"><span class="nm">${esc(LOJAS[l.loja] || l.loja)}${l.preco_ref ? `<br><span class="tiny mut">a partir de ${brl(l.preco_ref)}</span>` : ''}</span><button class="btn sm" data-golink="${l.id}">Ver na loja</button></div>`).join('')}
+        ${(o.product_links || []).map(l => `<div class="item"><span class="nm">${esc(LOJAS[l.loja] || l.loja)}${l.preco_ref ? `<br><span class="tiny mut">a partir de ${brl(l.preco_ref)}</span>` : ''}</span><div class="row" style="gap:6px;flex:none"><button class="btn sm" data-golink="${l.id}">Ver na loja</button><button class="btn ghost sm" data-usarlink="${l.id}">Comprei</button></div></div>`).join('')}
       </div>`).join('')}
+      <span class="tiny mut">Comprou por uma delas? Toque em <b>Comprei</b> e o gasto já entra no projeto, ligado à oferta.</span>
       <span class="tiny mut">Links de parceiros: o Prep.pro pode receber comissão, sem custo extra para você.</span>
     </div></div>`;
+}
+function achaLink(id) { for (const o of S.offers || []) for (const l of o.product_links || []) if (l.id === id) return { o, l }; return null; }
+function usarOferta(linkId) {
+  const r = achaLink(linkId); if (!r) return;
+  const sh = S.sheet || {}; S.sheet = null;
+  const pi = sh.itemId ? S.P.items.find(i => i.id === sh.itemId) : null;
+  const stage = pi ? (S.P.stages.find(s => stageItems(s).some(x => x.pi.id === pi.id)) || {}).id : null;
+  openForm(null, (stage || 'geral') + '|real');
+  Object.assign(S.form, { descricao: r.o.nome, fornecedor: LOJAS[r.l.loja] || '', real: r.l.preco_ref ? num(r.l.preco_ref) : null, project_item_id: pi ? pi.id : null, product_link_id: r.l.id, tipo: 'peca' });
+  render(); toast('Confira o valor que você pagou e salve.');
+}
+function ofertaOptions(f) {
+  const all = []; (S.offers || []).forEach(o => (o.product_links || []).forEach(l => all.push({ o, l })));
+  if (!all.length) return '';
+  const pi = f.project_item_id ? S.P.items.find(i => i.id === f.project_item_id) : null;
+  const sug = new Set(offersFor((f.descricao || '') + ' ' + (pi ? itemName(pi) : ''), pi && pi.template_item_id).map(o => o.id));
+  all.sort((a, b) => (sug.has(b.o.id) - sug.has(a.o.id)) || a.o.nome.localeCompare(b.o.nome));
+  return `<label class="f">Comprou por uma oferta do app? <span class="mut" style="font-weight:500">(opcional)</span><select id="foferta"><option value="">— não —</option>${all.map(x => `<option value="${x.l.id}" ${f.product_link_id === x.l.id ? 'selected' : ''}>${sug.has(x.o.id) ? '★ ' : ''}${esc(x.o.nome.slice(0, 60))} · ${esc(LOJAS[x.l.loja] || x.l.loja)}</option>`).join('')}</select></label>`;
 }
 function goLink(id) {
   let link = null; (S.offers || []).forEach(o => (o.product_links || []).forEach(l => { if (l.id === id) link = l; }));
@@ -1229,11 +1250,12 @@ function viewAdmin() {
     body = viewAdminUsers();
   } else {
     const c = S.clicks || { links: {}, banners: {} };
-    const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
+    const cp = S.compras || {};
+    const lk = (S.offers || []).map(o => ({ nome: o.nome, n: (o.product_links || []).reduce((a, l) => a + (c.links[l.id] || 0), 0), cn: (o.product_links || []).reduce((a, l) => a + ((cp[l.id] || {}).n || 0), 0), cv: (o.product_links || []).reduce((a, l) => a + ((cp[l.id] || {}).v || 0), 0), por: (o.product_links || []).map(l => (LOJAS[l.loja] || l.loja) + ' ' + (c.links[l.id] || 0)).join(' · ') })).sort((a, b) => b.n - a.n);
     const bn = (S.banners || []).map(b => ({ nome: b.parceiro + ' · ' + b.titulo, n: c.banners[b.id] || 0 })).sort((a, b) => b.n - a.n);
     const pedidos = S.carPedidos || [];
     body = `${pedidos.length ? `<div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Carros pedidos (não estão na lista)</b>${pedidos.map(x => `<div class="item"><span class="nm">${esc(x.texto)}</span><b>${x.n}</b></div>`).join('')}</div>` : ''}<div class="kpis"><div class="kpi"><span>Cliques em ofertas</span><b>${lk.reduce((a, x) => a + x.n, 0)}</b></div><div class="kpi"><span>Cliques em banners</span><b>${bn.reduce((a, x) => a + x.n, 0)}</b></div></div>
-      <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Ofertas</b>${lk.map(x => `<div class="item"><span class="nm">${esc(x.nome)}<br><span class="tiny mut">${esc(x.por)}</span></span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem ofertas.</p>'}</div>
+      <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Ofertas</b>${lk.map(x => `<div class="item"><span class="nm">${esc(x.nome)}<br><span class="tiny mut">${esc(x.por)}${x.cn ? ' · <b style="color:var(--ok2)">' + x.cn + ' compra' + (x.cn > 1 ? 's' : '') + ' (' + brl(x.cv) + ')</b>' : ''}</span></span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem ofertas.</p>'}</div>
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
   return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
@@ -1247,6 +1269,7 @@ async function loadClicks() {
   (l.data || []).forEach(r => links[r.product_link_id] = (links[r.product_link_id] || 0) + 1);
   (b.data || []).forEach(r => banners[r.banner_id] = (banners[r.banner_id] || 0) + 1);
   S.clicks = { links, banners };
+  const { data: cpr } = await sb.rpc('compras_por_oferta'); S.compras = {}; (cpr || []).forEach(r => S.compras[r.product_link_id] = { n: Number(r.compras), v: num(r.valor) });
   const { data: cs } = await sb.from('car_sugestoes').select('texto');
   const m = {}; (cs || []).forEach(r => { const k = r.texto.trim().toLowerCase(); m[k] = m[k] || { texto: r.texto.trim(), n: 0 }; m[k].n++; });
   S.carPedidos = Object.values(m).sort((a, b) => b.n - a.n);
@@ -1891,6 +1914,7 @@ $app.addEventListener('click', async ev => {
   }
   if (S.sheet) {
     const gl = ev.target.closest('[data-golink]'); if (gl) return goLink(gl.dataset.golink);
+    const ul = ev.target.closest('[data-usarlink]'); if (ul) return usarOferta(ul.dataset.usarlink);
     if (ev.target.id === 'sheet' || ev.target.closest('#sheetx')) { S.sheet = null; return render(); }
     return;
   }
