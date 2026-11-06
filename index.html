@@ -219,7 +219,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '9.2.1';
+const APP_VERSION = '9.3';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -506,14 +506,15 @@ async function createProject() {
 async function openProject(id, keepView) {
   await loadCars();
   S.pickOpen = false; S.pick = { brand: '', q: '' };
-  const [pr, it, dg, ps, cy, ex, cx] = await Promise.all([
+  const [pr, it, dg, ps, cy, ex, cx, dy] = await Promise.all([
     sb.from('projects').select('*, car_models(*)').eq('id', id).single(),
     sb.from('project_items').select('*').eq('project_id', id),
     sb.from('project_diagnostics').select('*').eq('project_id', id),
     sb.from('project_stages').select('*').eq('project_id', id),
     sb.from('project_cycles').select('*').eq('project_id', id).order('numero'),
     sb.from('project_expenses').select('*').eq('project_id', id).order('data', { ascending: false }),
-    sb.from('project_caixa').select('*').eq('project_id', id).order('criado_em', { ascending: false })
+    sb.from('project_caixa').select('*').eq('project_id', id).order('criado_em', { ascending: false }),
+    sb.from('project_dyno').select('*').eq('project_id', id)
   ]);
   if (cx.error) toast('Falta rodar o script prep-pro-v5-migracao.sql no Supabase.');
   if (pr.error) return fail(pr.error);
@@ -524,7 +525,7 @@ async function openProject(id, keepView) {
   stages.forEach(s => s.template_items.sort((a, b) => a.ordem - b.ordem));
   const cycles = cy.data || [];
   S.P = { p: pr.data, items: it.data || [], diag: dg.data || [], stages, pst: Object.fromEntries((ps.data || []).map(r => [r.stage_id, r])),
-    cycle: cycles.filter(c => !c.fechado_em).pop() || null, closed: cycles.filter(c => c.fechado_em).length, exp: ex.data || [], caixa: cx.data || [], diary: null };
+    cycle: cycles.filter(c => !c.fechado_em).pop() || null, closed: cycles.filter(c => c.fechado_em).length, exp: ex.data || [], caixa: cx.data || [], dyno: dy.error ? [] : (dy.data || []), diary: null };
   if (!keepView) S.view = 'project';
   if (!S.phase) S.phase = currentPhase();
   render(); syncMarcha();
@@ -626,9 +627,9 @@ function viewPhase() {
     body = `<div class="card">
       <span class="small mut">Ciclo ${c.numero || P.closed + 1}${P.closed ? ' · ' + P.closed + ' já fechado' + (P.closed > 1 ? 's' : '') : ''}</span>
       ${[['testes', 'Testes', 'Rodagem, dinamômetro, datalog'], ['regulagem', 'Regulagem', 'Mapa, pressão, ponto'], ['ajustes', 'Ajustes', 'Corrigir o que o teste mostrou']].map(x => `<button class="opt ${c[x[0]] ? 'on' : ''}" data-cyc="${x[0]}"><b>${c[x[0]] ? '✓ ' : ''}${x[1]}</b><span>${x[2]}</span></button>`).join('')}
-      <button class="btn ghost sm" data-newexp="geral|mao_de_obra">+ Lançar gasto (ex.: dinamômetro)</button>
+      <button class="btn ghost sm" data-newexp="geral|mao_de_obra">+ Lançar gasto</button>
       <button class="btn" id="closecyc">FECHAR CICLO · PRÓXIMO STAGE</button>
-    </div>`;
+    </div>${dynoCard()}`;
   } else {
     body = (n === 4 ? prepCard() : '') + P.stages.map(s => stageCard(s, n)).join('');
   }
@@ -675,7 +676,7 @@ function viewPartida() {
       <input class="add" data-addhave="${s.id}" placeholder="+ peça que eu já tenho neste stage" style="margin-top:6px">
     </div>`).join('')}
   </div>`;
-  return ficha + base + tenho;
+  return ficha + (p.tem_carro ? dynoCard() : '') + base + tenho;
 }
 function itemBadges(pi) {
   return (pi.ja_tenho ? `<span class="badge">${pi.ja_tenho === 'no_carro' ? 'já no carro' : 'já tenho'}</span>` : '') + (pi.origem ? '<span class="auto">da 2ª marcha</span>' : '');
@@ -1823,6 +1824,111 @@ function proximoPasso(p) {
   return m >= 6 ? 'Acerto fino: testar, regular e ajustar' : 'Agora: ' + m + 'ª marcha · ' + MARCHAS[m - 1];
 }
 
+// ---------------- Dinamômetro: medições para comparar antes e depois ----------------
+const COMBUST = ['Gasolina', 'Etanol', 'Diesel', 'GNV', 'Metanol'];
+const fmtD = d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR');
+function dynoCard() {
+  const P = S.P, c = P.p.car_models, l = (P.dyno || []).slice().sort((a, b) => a.data.localeCompare(b.data) || a.criado_em.localeCompare(b.criado_em));
+  const head = `<div class="row between"><b>Dinamômetro</b>${l.length ? `<span class="tiny mut">${l.length} medição${l.length > 1 ? 'ões' : ''}</span>` : ''}</div>`;
+  if (!l.length) return `<div class="card">${head}
+    <span class="small mut" style="line-height:1.4">Passou no dinamômetro? Registre os números reais. A primeira medição vira o "antes", e cada nova mostra quanto o projeto ganhou.</span>
+    <button class="btn ghost sm" data-dyno="new">+ Registrar medição</button></div>`;
+  const ini = l[0], ult = l[l.length - 1];
+  const fab = c && (c.potencia_cv || c.torque_kgfm) ? { potencia_cv: num(c.potencia_cv) || null, torque_kgfm: num(c.torque_kgfm) || null } : null;
+  const linha = (campo, un, casas) => {
+    const vals = [fab && fab[campo] ? ['Fábrica (documento)', fab[campo], '#6B7078', 'motor'] : null,
+      l.length > 1 && ini[campo] ? ['Antes · ' + fmtD(ini.data), num(ini[campo]), '#8C9096', ini.medida] : null,
+      ult[campo] ? [(l.length > 1 ? 'Agora · ' : 'Medido · ') + fmtD(ult.data), num(ult[campo]), '#FF6A1F', ult.medida] : null].filter(Boolean);
+    if (!vals.length) return '';
+    const max = Math.max(...vals.map(v => v[1]));
+    const base = l.length > 1 && ini[campo] ? num(ini[campo]) : (fab && fab[campo]) || null, atual = num(ult[campo]);
+    const ganho = base && atual && base !== atual ? Math.round((atual / base - 1) * 100) : null;
+    return `<div class="col" style="gap:6px">
+      <div class="row between"><span class="small"><b>${un === 'cv' ? 'Potência' : 'Torque'}</b></span>${ganho !== null ? `<span class="small" style="font-weight:700;color:${ganho >= 0 ? 'var(--ok2)' : 'var(--bad)'}">${ganho >= 0 ? '▲ +' : '▼ '}${ganho}%${l.length > 1 ? '' : ' sobre a fábrica'}</span>` : ''}</div>
+      ${vals.map(v => `<div class="col" style="gap:3px"><div class="row between tiny"><span class="mut">${esc(v[0])}${v[3] === 'roda' ? ' · na roda' : ''}</span><b>${fmtNum(v[1], casas)} ${un}</b></div><div style="height:8px;border-radius:0 4px 4px 0;background:${v[2]};width:${Math.max(2, v[1] / max * 100)}%"></div></div>`).join('')}
+    </div>`;
+  };
+  const mistura = fab && ult.medida === 'roda';
+  return `<div class="card">${head}
+    ${linha('potencia_cv', 'cv', 0)}${linha('torque_kgfm', 'kgfm', 1)}
+    ${mistura ? '<span class="tiny mut">Medição na roda costuma dar uns 10 a 20% a menos que o número de fábrica, que é no motor. Compare sempre roda com roda.</span>' : ''}
+    <div class="col" style="gap:0">${l.slice().reverse().map(d => `<button class="item" data-dyno="${d.id}" style="background:none;border:0;border-top:1px solid var(--line);padding:10px 0;color:inherit;text-align:left;width:100%">
+      <span class="nm"><b>${fmtD(d.data)}</b>${d.local ? ' · ' + esc(d.local) : ''}<br><span class="tiny mut">${[d.medida === 'roda' ? 'na roda' : 'no motor', d.combustivel, d.rpm_potencia ? 'pico a ' + fmtNum(d.rpm_potencia) + ' rpm' : null].filter(Boolean).map(esc).join(' · ')}${d.foto ? ' · 📄 laudo' : ''}</span></span>
+      <b style="white-space:nowrap">${d.potencia_cv ? fmtNum(d.potencia_cv) + ' cv' : '—'}${d.torque_kgfm ? '<span class="tiny mut" style="display:block;text-align:right;font-weight:500">' + fmtNum(d.torque_kgfm, 1) + ' kgfm</span>' : ''}</b>
+    </button>`).join('')}</div>
+    <button class="btn ghost sm" data-dyno="new">+ Nova medição</button>
+  </div>`;
+}
+async function loadDyno() { const { data, error } = await sb.from('project_dyno').select('*').eq('project_id', S.P.p.id); S.P.dyno = error ? [] : (data || []); }
+function openDyno(id) {
+  const d = id === 'new' ? null : (S.P.dyno || []).find(x => x.id === id);
+  const ult = (S.P.dyno || []).slice().sort((a, b) => b.data.localeCompare(a.data))[0];
+  S.dy = d ? Object.assign({}, d) : { id: null, data: today(), potencia_cv: null, torque_kgfm: null, rpm_potencia: null, rpm_torque: null, medida: ult ? ult.medida : 'roda', local: ult ? ult.local || '' : '', combustivel: ult ? ult.combustivel || '' : '', obs: '', foto: null, custo: null };
+  S.dyBack = S.phase; S.view = 'dyno'; S.armed = null; render(); window.scrollTo(0, 0);
+  if (d && d.foto) sb.storage.from('diario').createSignedUrl(d.foto, 3600).then(({ data }) => { if (data && S.dy && S.dy.id === d.id) { S.dy.fotoUrl = data.signedUrl; render(); } });
+}
+function keepDy() {
+  const g = id => document.getElementById(id), f = S.dy; if (!f || !g('dydata')) return;
+  f.data = g('dydata').value || today(); f.potencia_cv = parseMoney(g('dycv').value); f.torque_kgfm = parseMoney(g('dytq').value);
+  f.rpm_potencia = parseMoney(g('dyrpm1').value); f.rpm_torque = parseMoney(g('dyrpm2').value); f.local = g('dylocal').value; f.obs = g('dyobs').value;
+  if (g('dycusto')) f.custo = parseMoney(g('dycusto').value);
+}
+function viewDyno() {
+  const f = S.dy, c = S.P.p.car_models, locais = [...new Set((S.P.dyno || []).map(d => d.local).filter(Boolean).concat(S.P.exp.map(e => e.fornecedor).filter(Boolean)))];
+  return `<div class="row"><button class="icon-btn" id="dyback" aria-label="Voltar">${back}</button><h1 style="font-size:28px">${f.id ? 'Medição' : 'Nova medição'}</h1></div>
+  <span class="small mut">${esc(S.P.p.nome)}${c && c.potencia_cv ? ' · fábrica: ' + fmtNum(c.potencia_cv) + ' cv' + (c.torque_kgfm ? ' / ' + fmtNum(c.torque_kgfm, 1) + ' kgfm' : '') : ''}</span>
+  <div class="money2">
+    <label class="f">Potência (cv)<input id="dycv" inputmode="decimal" value="${esc(fmtIn(f.potencia_cv))}" placeholder="Ex.: 162"></label>
+    <label class="f">Torque (kgfm)<input id="dytq" inputmode="decimal" value="${esc(fmtIn(f.torque_kgfm))}" placeholder="Ex.: 31,5"></label>
+    <label class="f">Rpm da potência<input id="dyrpm1" inputmode="numeric" value="${esc(f.rpm_potencia ?? '')}" placeholder="opcional"></label>
+    <label class="f">Rpm do torque<input id="dyrpm2" inputmode="numeric" value="${esc(f.rpm_torque ?? '')}" placeholder="opcional"></label>
+  </div>
+  <div class="col" style="gap:6px"><span class="small mut">Medido</span><div class="chips"><button class="chip xs ${f.medida === 'roda' ? 'on' : ''}" data-dymed="roda">Na roda</button><button class="chip xs ${f.medida === 'motor' ? 'on' : ''}" data-dymed="motor">No motor (corrigido)</button></div><span class="tiny mut">Na dúvida, é na roda: é o que o dinamômetro de rolo mede. Se o laudo trouxer os dois, use o da roda.</span></div>
+  <div class="col" style="gap:6px"><span class="small mut">Combustível</span><div class="chips">${COMBUST.map(x => `<button class="chip xs ${f.combustivel === x ? 'on' : ''}" data-dycomb="${x}">${x}</button>`).join('')}</div></div>
+  <label class="f">Onde mediu<input id="dylocal" list="dylocais" value="${esc(f.local || '')}" placeholder="Ex.: RS Performance"><datalist id="dylocais">${locais.map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
+  <label class="f">Data<input id="dydata" type="date" value="${esc(f.data)}"></label>
+  <label class="f">Observações<textarea id="dyobs" placeholder="Pressão do turbo, mapa, temperatura, o que mudou desde a última…">${esc(f.obs || '')}</textarea></label>
+  <div class="col" style="gap:8px"><span class="small mut">Foto do laudo (opcional)</span>
+    ${f.fotoUrl ? `<img src="${esc(f.fotoUrl)}" alt="Laudo do dinamômetro" style="width:100%;border-radius:12px">` : ''}
+    <label class="btn ghost sm" style="display:flex;align-items:center;justify-content:center">${f.foto || f.fotoFile ? 'Trocar foto do laudo' : 'Escolher foto do laudo'}<input id="dyfoto" type="file" accept="image/*" style="display:none"></label>
+    ${f.fotoFile ? '<span class="tiny" style="color:var(--ok2)">Foto escolhida ✓</span>' : ''}</div>
+  ${f.id ? '' : `<label class="f">Quanto custou a sessão? <span class="mut" style="font-weight:500">(opcional, entra nos gastos)</span><input id="dycusto" inputmode="decimal" value="${esc(fmtIn(f.custo))}" placeholder="Ex.: 350"></label>`}
+  <button class="btn" id="dysave">SALVAR MEDIÇÃO</button>
+  ${f.id ? `<button class="btn danger ${armed('dydel') ? 'armed' : ''}" id="dydel">${armed('dydel') ? 'Toque de novo para excluir' : 'Excluir medição'}</button>` : ''}`;
+}
+async function saveDyno() {
+  keepDy(); const f = S.dy, P = S.P;
+  if (!f.potencia_cv && !f.torque_kgfm) return toast('Preencha a potência ou o torque.');
+  const btn = document.getElementById('dysave'); btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    let foto = f.foto || null;
+    if (f.fotoFile) {
+      const blob = await shrink(f.fotoFile), path = `${S.user.id}/${P.p.id}/dyno-${Date.now()}.jpg`;
+      const { error } = await sb.storage.from('diario').upload(path, blob, { contentType: 'image/jpeg' }); if (error) throw error;
+      if (f.foto) sb.storage.from('diario').remove([f.foto]);
+      foto = path;
+    }
+    const row = { project_id: P.p.id, data: f.data, potencia_cv: f.potencia_cv, torque_kgfm: f.torque_kgfm, rpm_potencia: f.rpm_potencia ? Math.round(f.rpm_potencia) : null, rpm_torque: f.rpm_torque ? Math.round(f.rpm_torque) : null, medida: f.medida, local: (f.local || '').trim() || null, combustivel: f.combustivel || null, obs: (f.obs || '').trim() || null, foto };
+    const q = f.id ? sb.from('project_dyno').update(row).eq('id', f.id) : sb.from('project_dyno').insert(row);
+    const { error } = await q; if (error) throw error;
+    if (!f.id && f.custo) {
+      const { data: e, error: e2 } = await sb.from('project_expenses').insert({ project_id: P.p.id, stage_id: null, tipo: 'servico', descricao: 'Dinamômetro' + (row.local ? ' · ' + row.local : ''), fornecedor: row.local, valor_previsto: null, valor_realizado: f.custo, data: f.data }).select().single();
+      if (!e2 && e) P.exp.unshift(e);
+    }
+    await loadDyno();
+    const ult = P.dyno.slice().sort((a, b) => b.data.localeCompare(a.data))[0];
+    if (ult && ult.potencia_cv) { P.p.ficha = Object.assign({}, P.p.ficha || {}, { cv_hoje: Math.round(num(ult.potencia_cv)) }); sb.from('projects').update({ ficha: P.p.ficha }).eq('id', P.p.id).then(() => {}); }
+    S.dy = null; S.view = 'project'; S.tab = 'marchas'; S.phase = S.dyBack || S.phase; render(); irParaFase();
+    toast(f.id ? 'Medição atualizada ✓' : 'Medição registrada ✓' + (f.custo ? ' Custo lançado nos gastos.' : ''));
+  } catch (e) { btn.disabled = false; btn.textContent = 'SALVAR MEDIÇÃO'; fail(e); }
+}
+async function deleteDyno() {
+  if (!arm('dydel')) return;
+  const f = S.dy; const { error } = await sb.from('project_dyno').delete().eq('id', f.id); if (error) return fail(error);
+  if (f.foto) sb.storage.from('diario').remove([f.foto]);
+  await loadDyno(); S.dy = null; S.view = 'project'; S.tab = 'marchas'; S.phase = S.dyBack || S.phase; render(); toast('Medição excluída.');
+}
+
 // ---------------- Gráficos ----------------
 const TIPO_CHART = { peca: '#3987e5', mao_de_obra: '#d95926', frete: '#199e70', servico: '#c98500', outro: '#d55181' };
 const PREV_COR = '#6B7078', REAL_COR = '#3987e5';
@@ -1904,7 +2010,7 @@ function chartAcum() {
 function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
-    : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
+    : v === 'dyno' ? viewDyno() : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : '<div class="center mut">Carregando…</div>';
   $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
@@ -1938,6 +2044,12 @@ $app.addEventListener('click', async ev => {
   if (id === 'admin') return openAdmin('ofertas');
   if (id === 'perfil') return openPerfil();
   if (id === 'google') return loginGoogle();
+  if (ds.dyno) return openDyno(ds.dyno);
+  if (ds.dymed) { keepDy(); S.dy.medida = ds.dymed; return render(); }
+  if (ds.dycomb) { keepDy(); S.dy.combustivel = S.dy.combustivel === ds.dycomb ? '' : ds.dycomb; return render(); }
+  if (id === 'dysave') return saveDyno();
+  if (id === 'dydel') return deleteDyno();
+  if (id === 'dyback') { S.dy = null; S.view = 'project'; S.tab = 'marchas'; S.phase = S.dyBack || S.phase; render(); return irParaFase(); }
   if (id === 'completar') return salvarCompletar();
   if (id === 'termos') { ev.preventDefault(); return showTermos(); }
   if (id === 'verplanos') return openPlanos();
@@ -2085,6 +2197,7 @@ async function buscaCep(el) {
 }
 $app.addEventListener('input', ev => { if (ev.target.dataset && ev.target.dataset.cep) buscaCep(ev.target); });
 $app.addEventListener('change', ev => {
+  if (ev.target.id === 'dyfoto') { keepDy(); S.dy.fotoFile = ev.target.files[0] || null; S.dy.fotoUrl = S.dy.fotoFile ? URL.createObjectURL(S.dy.fotoFile) : S.dy.fotoUrl; return render(); }
   if (ev.target.id === 'foferta' && ev.target.value) {
     // Escolheu a oferta: completa o que estiver em branco (descrição, loja e valor)
     const r = achaLink(ev.target.value), g = id => document.getElementById(id); if (!r) return;
