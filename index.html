@@ -228,7 +228,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '9.4';
+const APP_VERSION = '9.5';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -2130,7 +2130,12 @@ $app.addEventListener('click', async ev => {
   if (ds.fichachip) { const [k, v] = ds.fichachip.split('|'); await saveFicha(k, S.P.p.ficha?.[k] === v ? null : v); return render(); }
   if (id === 'w2') { keepWiz(); return createProject(); }
   if (id === 'pback') return loadGarage();
-  if (ds.phase) { S.phase = +ds.phase; S.tab = 'marchas'; render(); return irParaFase(); }
+  if (ds.phase) {
+    // Troca a marcha sem mexer na tela: o câmbio continua onde está e o conteúdo muda embaixo
+    const y = window.scrollY; S.phase = +ds.phase; S.tab = 'marchas'; render();
+    window.scrollTo(0, y); requestAnimationFrame(() => window.scrollTo(0, y));
+    return;
+  }
   if (ds.goto) { S.phase = +ds.goto; S.tab = 'marchas'; return render(); }
   if (ds.tab) { S.tab = ds.tab; render(); if (ds.tab === 'diario') loadDiary(); return; }
   if (ds.gview) { S.gview = ds.gview; return render(); }
