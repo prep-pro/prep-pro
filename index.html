@@ -228,7 +228,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '9.5';
+const APP_VERSION = '9.6';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -2096,7 +2096,7 @@ $app.addEventListener('click', async ev => {
   if (ds.mode) { if (S.mode !== ds.mode) { S.mode = ds.mode; render(); window.scrollTo(0, 0); if (ds.mode === 'criar') setTimeout(() => document.getElementById('nome')?.focus(), 50); } return; }
   if (id === 'forgot') return forgot();
   if (id === 'savepass') return savePass();
-  if (id === 'logout') { await sb.auth.signOut(); S.view = 'login'; return render(); }
+  if (id === 'logout') { await sb.auth.signOut(); S.view = 'login'; S.mode = 'entrar'; window.scrollTo(0, 0); return render(); }
   if (id === 'preset') return startWizard(true);
   if (id === 'novo') return startWizard(false);
   if (ds.open) {
