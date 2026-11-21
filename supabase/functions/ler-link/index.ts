@@ -44,6 +44,7 @@ function preco(v: unknown): number | null {
   let s = String(v).replace(/[^\d.,]/g, "");
   if (!s) return null;
   if (s.includes(",") && s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+  else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) s = s.replace(/\./g, ""); // "3.690" = três mil e seiscentos
   else s = s.replace(/,/g, "");
   const n = parseFloat(s);
   return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
