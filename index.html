@@ -1551,8 +1551,8 @@ function viewAdminPreps() {
     <span class="tiny mut">${esc(p.cidade)}/${esc(p.uf)} · ${S.aPrepC[p.user_id] || 0} contatos${p.quer_destaque_em ? ' · <b style="color:var(--acc2)">quer destaque</b>' : ''}</span>
     <span class="small">${isDest(p) ? 'Destaque até ' + fmtData(p.destaque_ate) : 'Sem destaque'}</span>
     <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-adest="${p.user_id}">+30 dias de destaque</button>${isDest(p) ? `<button class="btn ghost sm" data-adestx="${p.user_id}">Tirar</button>` : ''}
-      <button class="btn ghost sm" data-aver="${p.user_id}">${p.verificado ? 'Tirar verificado' : '✓ Verificar'}</button>
-      <button class="btn ghost sm" data-ablq="${p.user_id}" style="color:var(--bad)">${p.bloqueado ? 'Desbloquear' : 'Bloquear'}</button></div>
+      ${'verificado' in p ? `<button class="btn ghost sm" data-aver="${p.user_id}">${p.verificado ? 'Tirar verificado' : '✓ Verificar'}</button>
+      <button class="btn ghost sm" data-ablq="${p.user_id}" style="color:var(--bad)">${p.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>` : ''}</div>
   </div>`).join('') : '<p class="small mut">Nenhum preparador cadastrado ainda.</p>';
 }
 async function adminFlag(uid, campo) {
@@ -1596,11 +1596,11 @@ function viewShare() {
   return `<div class="row"><button class="icon-btn" id="shback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Compartilhar</h1></div>
   <p class="mut" style="margin-top:-6px">Mostre a evolução do ${esc(p.nome)} para a galera.</p>
   <div class="card" style="padding:10px;align-items:center">${S.shImg ? `<img src="${S.shImg.url}" alt="Imagem do projeto para compartilhar" style="width:100%;max-width:360px;border-radius:14px;display:block">` : '<div class="center mut" style="padding:60px 0">Montando a imagem…</div>'}</div>
-  <div class="card">
+  ${'publico' in p ? `<div class="card">
     <label class="row" style="gap:12px;align-items:flex-start"><input type="checkbox" data-shpub ${p.publico ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Link para acompanhar</b><br><span class="small mut">Quem tiver o link vê o plano, o que já foi instalado e o dinamômetro. Sem seus contatos.</span></span></label>
     ${p.publico ? `<label class="row" style="gap:12px;align-items:flex-start"><input type="checkbox" data-shval ${p.publico_valores ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Mostrar quanto já investi</b><br><span class="small mut">Desligado, ninguém vê valores.</span></span></label>
     <div class="row" style="gap:8px"><input readonly value="${esc(shareUrl())}" style="flex:1;min-width:0" aria-label="Link do projeto"><button class="btn ghost sm" id="shcopy">Copiar</button></div>` : ''}
-  </div>
+  </div>` : ''}
   <button class="btn" id="shwa">ENVIAR NO WHATSAPP</button>
   <button class="btn ghost" id="shnative">Postar nas redes (Instagram, Stories…)</button>
   <button class="btn ghost sm" id="shdown">Baixar a imagem</button>`;
