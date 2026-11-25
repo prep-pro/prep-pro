@@ -1,0 +1,3 @@
+-- v10.1 · O link público passa a listar as peças (gastos do tipo "peca") com o link da oferta vinculada.
+-- O preço pago só aparece quando o dono liga "Mostrar quanto já investi" (publico_valores).
+-- Definição completa aplicada no Supabase como migração v10_1_pecas_no_link_publico (função projeto_publico).
