@@ -6,6 +6,16 @@
   [headers.values]
     Cache-Control = "no-cache"
 
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
+
 [[redirects]]
   from = "/sql/*"
   to = "/404.html"
