@@ -1,6 +1,6 @@
 {
-  "name": "Prep.pro",
-  "short_name": "Prep.pro",
+  "name": "prep-pro.app",
+  "short_name": "prep-pro.app",
   "description": "As 5 Marchas: do sonho ao carro preparado.",
   "start_url": "./",
   "display": "standalone",

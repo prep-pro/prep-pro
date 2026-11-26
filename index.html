@@ -6,18 +6,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Prep.pro">
+<meta name="apple-mobile-web-app-title" content="prep-pro.app">
 <meta name="theme-color" content="#0E0F11">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
-<title>Prep.pro · As 5 Marchas da preparação</title>
+<title>prep-pro.app · As 5 Marchas da preparação</title>
 <meta name="description" content="Planeje a preparação do seu carro com As 5 Marchas: do sonho ao carro pronto, na ordem certa. Orçamento, gastos, preparadores e dinamômetro num só lugar.">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Prep.pro">
+<meta property="og:site_name" content="prep-pro.app">
 <meta property="og:locale" content="pt_BR">
 <meta property="og:url" content="https://prep-pro.app/">
-<meta property="og:title" content="Prep.pro · Todo carro preparado começou como um sonho">
+<meta property="og:title" content="prep-pro.app · Todo carro preparado começou como um sonho">
 <meta property="og:description" content="Planeje seu projeto com As 5 Marchas: o que você quer, o que tem, o que precisa, quem faz e a execução.">
 <meta property="og:image" content="https://prep-pro.app/icon-512.png">
 <meta name="twitter:card" content="summary">
@@ -142,7 +142,7 @@ input.who,input.add{height:42px;background:var(--card2)}
 .spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.spec div{background:var(--card2);border-radius:10px;padding:8px}.spec span{display:block;font-size:11px;color:var(--mut)}.spec b{font:700 16px 'Barlow Condensed',sans-serif}
 #splash{position:fixed;inset:0;z-index:50;background:#0B0C0E;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .6s ease}
 #splash canvas{position:absolute;inset:0;width:100%;height:100%}
-#splash .lg{position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:68px;letter-spacing:6px;color:#F2EFEA;opacity:0;filter:blur(18px);transform:scale(1.18);transition:opacity 1.6s ease,filter 1.6s ease,transform 1.8s cubic-bezier(.2,.8,.2,1),letter-spacing 1.8s ease}
+#splash .lg{position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(38px,11.5vw,68px);letter-spacing:3px;white-space:nowrap;color:#F2EFEA;opacity:0;filter:blur(18px);transform:scale(1.18);transition:opacity 1.6s ease,filter 1.6s ease,transform 1.8s cubic-bezier(.2,.8,.2,1),letter-spacing 1.8s ease}
 #splash .lg b{color:var(--acc)}
 #splash .lg.on{opacity:1;filter:blur(0);transform:scale(1);letter-spacing:1px}
 #splash .tl{position:relative;margin-top:4px;font:600 13px Barlow,sans-serif;letter-spacing:5px;color:#A7AAB0;opacity:0;transition:opacity 1s ease .9s}
@@ -157,7 +157,7 @@ input.who,input.add{height:42px;background:var(--card2)}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><canvas id="smoke"></canvas><div class="lg">PREP<b>.PRO</b></div><div class="tl">AS 5 MARCHAS</div></div>
+<div id="splash" aria-hidden="true"><canvas id="smoke"></canvas><div class="lg">PREP-PRO<b>.APP</b></div><div class="tl">AS 5 MARCHAS</div></div>
 <div id="app"><div class="center mut">Carregando…</div></div>
 <div id="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -228,7 +228,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '10.1';
+const APP_VERSION = '10.2';
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -284,7 +284,7 @@ async function init() {
 function viewLogin() {
   const signup = S.mode === 'criar';
   return `
-  <div class="brand">PREP<b>.PRO</b></div>
+  <div class="brand">PREP-PRO<b>.APP</b></div>
   <h1 style="font-size:40px">Todo carro preparado começou como um sonho.</h1>
   <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
   <div class="col" style="margin-top:8px">
@@ -302,20 +302,20 @@ function viewLogin() {
       <div class="usogrid">${USO_CARDS.map((u, i) => `<button type="button" class="uso ${i ? '' : 'on'}" data-uso="${u[0]}" aria-pressed="${i ? 'false' : 'true'}">${u[3]}<b>${u[1]}</b><span>${u[2]}</span></button>`).join('')}</div>
       <span class="tiny mut" id="usohint" style="display:none">Depois do cadastro você completa os dados para aparecer para clientes da sua cidade.</span>
     </div>
-    <label class="f">Como conheceu o Prep.pro?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option>${c}</option>`).join('')}</select></label>
+    <label class="f">Como conheceu o prep-pro.app?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option>${c}</option>`).join('')}</select></label>
     <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" checked style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
     <label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>
     <div class="card" style="gap:4px;padding:12px 14px"><span class="small"><b>Começa grátis.</b> <span class="mut">Sem cartão. Se quiser, depois conheça o PRO: os cupons dos parceiros já pagam a assinatura.</span></span></div>` : ''}
     <button class="btn" id="go" ${S.busy ? 'disabled' : ''}>${signup ? 'CRIAR MINHA CONTA' : 'ENTRAR'}</button>
     ${signup ? `<div class="row" style="justify-content:center;gap:6px"><span class="small mut">Já tem conta?</span><button class="link" data-mode="entrar">Entrar</button></div>`
       : `<div class="row" style="justify-content:flex-end"><button class="link" id="forgot" style="color:var(--mut)">Esqueci a senha</button></div>
-    <div class="row" style="gap:12px;align-items:center;margin:6px 0 2px"><i style="flex:1;height:1px;background:var(--line)"></i><span class="small mut">Primeira vez no Prep.pro?</span><i style="flex:1;height:1px;background:var(--line)"></i></div>
+    <div class="row" style="gap:12px;align-items:center;margin:6px 0 2px"><i style="flex:1;height:1px;background:var(--line)"></i><span class="small mut">Primeira vez no prep-pro.app?</span><i style="flex:1;height:1px;background:var(--line)"></i></div>
     <button class="btn" data-mode="criar" style="background:transparent;border:2px solid var(--acc);color:var(--acc2)">CRIAR CONTA GRÁTIS</button>
     <span class="tiny mut" style="text-align:center">Leva 1 minuto. Sem cartão.</span>`}
   </div>`;
 }
 function viewNewPass() {
-  return `<div class="brand">PREP<b>.PRO</b></div><h1>Nova senha</h1>
+  return `<div class="brand">PREP-PRO<b>.APP</b></div><h1>Nova senha</h1>
   <label class="f">Digite a nova senha<input id="np" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
   <button class="btn" id="savepass">SALVAR NOVA SENHA</button>`;
 }
@@ -372,7 +372,7 @@ async function loadGarage() {
   S.projects = data; S.view = 'garage'; render(); loadCapas().catch(() => {});
   try {
     if (S.user.user_metadata && S.user.user_metadata.preparador && !S.prep && !localStorage.getItem('pp_prep_conv')) { localStorage.setItem('pp_prep_conv', '1'); return openPerfil(true); }
-    if (!isPro() && !localStorage.getItem('pp_planos_visto')) { localStorage.setItem('pp_planos_visto', '1'); S.planoMotivo = 'Bem-vindo ao Prep.pro! Você começa no plano grátis. Veja o que o PRO libera:'; return openPlanos(); }
+    if (!isPro() && !localStorage.getItem('pp_planos_visto')) { localStorage.setItem('pp_planos_visto', '1'); S.planoMotivo = 'Bem-vindo ao prep-pro.app! Você começa no plano grátis. Veja o que o PRO libera:'; return openPlanos(); }
   } catch (e) {}
 }
 function viewGarage() {
@@ -398,13 +398,13 @@ function viewGarage() {
     </div>`;
   }).join('');
   return `
-  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP<b>.PRO</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP-PRO<b>.APP</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
   ${S.projects.length > 1 || (S.projects[0] && (S.projects[0].project_expenses || []).length) ? (() => { const inv = sumBy(S.projects.flatMap(p => p.project_expenses || []), e => e.valor_realizado); return `<div class="kpis"><div class="kpi"><span>Projetos e sonhos</span><b>${S.projects.length}</b></div><div class="kpi"><span>Investido até agora</span><b>${brl(inv)}</b></div></div>`; })() : ''}
   ${S.projects.length ? cards + '<button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>' : `
     <div class="card hot" style="gap:10px">
       <h2 style="margin:0">${S.perfil && S.perfil.nome ? 'Bem-vindo, ' + esc(S.perfil.nome.split(' ')[0]) + '!' : 'Bem-vindo!'}</h2>
-      <p class="small mut" style="margin:0;line-height:1.45">Todo carro preparado começa com um sonho. Conte qual é o seu e o Prep.pro monta o plano com <b style="color:var(--fg)">As 5 Marchas</b>: o que você quer, o que já tem, o que precisa, quem faz e a execução.</p>
+      <p class="small mut" style="margin:0;line-height:1.45">Todo carro preparado começa com um sonho. Conte qual é o seu e o prep-pro.app monta o plano com <b style="color:var(--fg)">As 5 Marchas</b>: o que você quer, o que já tem, o que precisa, quem faz e a execução.</p>
       <p class="tiny mut" style="margin:0">Ainda não tem o carro? Sem problema: dá para planejar o sonho antes de comprar.</p>
       <button class="btn" id="novo">COMEÇAR MEU PROJETO</button>
     </div>`}
@@ -1189,7 +1189,7 @@ function viewSheet() {
         ${(o.product_links || []).map(l => `<div class="item"><span class="nm">${esc(LOJAS[l.loja] || l.loja)}${l.preco_ref ? `<br><span class="tiny mut">a partir de ${brl(l.preco_ref)}</span>` : ''}</span><div class="row" style="gap:6px;flex:none"><button class="btn sm" data-golink="${l.id}">Ver na loja</button><button class="btn ghost sm" data-usarlink="${l.id}">Comprei</button></div></div>`).join('')}
       </div>`).join('')}
       <span class="tiny mut">Comprou por uma delas? Toque em <b>Comprei</b> e o gasto já entra no projeto, ligado à oferta.</span>
-      <span class="tiny mut">Links de parceiros: o Prep.pro pode receber comissão, sem custo extra para você.</span>
+      <span class="tiny mut">Links de parceiros: o prep-pro.app pode receber comissão, sem custo extra para você.</span>
     </div></div>`;
 }
 function achaLink(id) { for (const o of S.offers || []) for (const l of o.product_links || []) if (l.id === id) return { o, l }; return null; }
@@ -1446,8 +1446,8 @@ function prepCard() {
       <span class="tiny mut">${esc(p.cidade)}/${esc(p.uf)}${(p.especialidades || []).length ? ' · ' + esc(p.especialidades.join(', ')) : ''}</span>
       ${p.descricao ? `<span class="small mut" style="line-height:1.4">${esc(p.descricao)}</span>` : ''}
       <div class="row" style="gap:8px">${zap(p.whatsapp) ? `<button class="btn sm" data-pwa="${p.user_id}">WhatsApp</button>` : ''}${p.instagram ? `<button class="btn ghost sm" data-pig="${p.user_id}">Instagram</button>` : ''}</div>
-    </div>`).join('') : `<span class="small mut">Ainda não tem preparador cadastrado ${esc(r.onde)}. Conhece algum? Indique o Prep.pro para ele.</span>`}
-    <span class="tiny mut">Destaque é um espaço pago pelo preparador. "Verificado" quer dizer que o Prep.pro confirmou que a oficina existe; não é garantia do serviço.</span>
+    </div>`).join('') : `<span class="small mut">Ainda não tem preparador cadastrado ${esc(r.onde)}. Conhece algum? Indique o prep-pro.app para ele.</span>`}
+    <span class="tiny mut">Destaque é um espaço pago pelo preparador. "Verificado" quer dizer que o prep-pro.app confirmou que a oficina existe; não é garantia do serviço.</span>
   </div>`;
 }
 function prepChips(stageId) {
@@ -1458,7 +1458,7 @@ function logContato(p, tipo) { sb.from('preparador_contatos').insert({ preparado
 function abrirPrep(id, tipo) {
   const p = (S.preps || []).find(x => x.user_id === id); if (!p) return;
   const nomeCarro = S.P ? S.P.p.nome : 'meu carro';
-  const url = tipo === 'whatsapp' ? `https://wa.me/${zap(p.whatsapp)}?text=${encodeURIComponent('Olá! Vi você no Prep.pro e quero conversar sobre o meu projeto (' + nomeCarro + ').')}`
+  const url = tipo === 'whatsapp' ? `https://wa.me/${zap(p.whatsapp)}?text=${encodeURIComponent('Olá! Vi você no prep-pro.app e quero conversar sobre o meu projeto (' + nomeCarro + ').')}`
     : 'https://instagram.com/' + String(p.instagram).replace(/^@|https?:\/\/(www\.)?instagram\.com\//g, '').replace(/\/.*$/, '');
   window.open(url, '_blank', 'noopener'); logContato(p, tipo);
 }
@@ -1584,7 +1584,7 @@ function shareText(r) {
   const partes = [`${r.p.nome} · ${carLine(r.p)}`, `${r.feitos} de ${r.total} itens instalados (${r.pct}%)`];
   if (r.d1) partes.push(`${fmtNum(num(r.d0.potencia_cv))} → ${fmtNum(num(r.d1.potencia_cv))} cv no dinamômetro${r.ganho !== null ? ` (${r.ganho >= 0 ? '+' : ''}${r.ganho}%)` : ''}`);
   if (r.p.publico_valores) partes.push(brl(r.inv) + ' investidos');
-  return `🏁 Meu projeto no Prep.pro\n${partes.join('\n')}\n\n${r.p.publico ? 'Acompanhe: ' : 'Monte o seu plano grátis: '}${shareUrl()}`;
+  return `🏁 Meu projeto no prep-pro.app\n${partes.join('\n')}\n\n${r.p.publico ? 'Acompanhe: ' : 'Monte o seu plano grátis: '}${shareUrl()}`;
 }
 async function openShare() {
   S.view = 'share'; S.shImg = null; render(); window.scrollTo(0, 0);
@@ -1619,7 +1619,7 @@ async function shareImage(r) {
   const rad = g.createRadialGradient(W * .8, H * .15, 0, W * .8, H * .15, 900); rad.addColorStop(0, 'rgba(255,106,31,.30)'); rad.addColorStop(1, 'rgba(255,106,31,0)'); g.fillStyle = rad; g.fillRect(0, 0, W, H);
   const C = 'Barlow Condensed', B = 'Barlow';
   g.textBaseline = 'alphabetic';
-  g.font = `800 52px "${C}"`; g.fillStyle = '#F2EFEA'; g.fillText('PREP', 70, 120); g.fillStyle = '#FF6A1F'; g.fillText('.PRO', 70 + g.measureText('PREP').width, 120);
+  g.font = `800 52px "${C}"`; g.fillStyle = '#F2EFEA'; g.fillText('PREP-PRO', 70, 120); g.fillStyle = '#FF6A1F'; g.fillText('.APP', 70 + g.measureText('PREP-PRO').width, 120);
   const fit = (txt, size, maxW, weight = 800, fam = C) => { let s = size; do { g.font = `${weight} ${s}px "${fam}"`; s -= 4; } while (g.measureText(txt).width > maxW && s > 30); };
   fit(r.p.nome.toUpperCase(), 110, W - 140); g.fillStyle = '#F2EFEA'; g.fillText(r.p.nome.toUpperCase(), 70, 250);
   fit(carLine(r.p), 40, W - 140, 600, B); g.fillStyle = '#A7AAB0'; g.fillText(carLine(r.p), 70, 305);
@@ -1681,11 +1681,11 @@ function viewPublico() {
   const d = S.pub;
   if (!d) return '<div class="center mut">Carregando…</div>';
   const cta = `<button class="btn" id="pubgo">${S.user ? 'IR PARA MINHA GARAGEM' : 'MONTAR O MEU PROJETO GRÁTIS'}</button>`;
-  if (d.erro) return `<div class="brand">PREP<b>.PRO</b></div><h1>Projeto não encontrado</h1><p class="mut">O dono pode ter desligado o link.</p>${cta}`;
+  if (d.erro) return `<div class="brand">PREP-PRO<b>.APP</b></div><h1>Projeto não encontrado</h1><p class="mut">O dono pode ter desligado o link.</p>${cta}`;
   const itens = d.stages.filter(s => !s.legal).flatMap(s => s.itens), feitos = itens.filter(i => i.status === 'instalado').length, pct = itens.length ? Math.round(feitos / itens.length * 100) : 0;
   const dy = d.dyno || [], d0 = dy[0], d1 = dy.length > 1 ? dy[dy.length - 1] : null;
   const ganho = d0 && d1 && num(d0.cv) ? Math.round((num(d1.cv) / num(d0.cv) - 1) * 100) : null;
-  return `<div class="brand">PREP<b>.PRO</b></div>
+  return `<div class="brand">PREP-PRO<b>.APP</b></div>
   <div class="card" style="gap:8px;border-color:#5A3520">
     <span class="tiny" style="color:var(--acc2);font-weight:700;letter-spacing:2px">PROJETO DE ${esc(String(d.dono || '').toUpperCase())}</span>
     <h1 style="font-size:36px;margin:0">${esc(d.nome)}</h1>
@@ -1703,7 +1703,7 @@ function viewPublico() {
         ${x.valor !== null && x.valor !== undefined ? `<span class="tiny mut">Paguei ${brl(x.valor)}</span>` : ''}
         ${x.produto && x.produto.url ? `<a class="btn sm" style="margin-top:6px;align-self:flex-start;text-decoration:none" href="${esc(x.produto.url)}" target="_blank" rel="noopener sponsored">Ver no ${esc(LOJAS[x.produto.loja] || 'site da loja')}</a>` : ''}
       </div></div>`).join('')}
-    <span class="tiny mut">Links de parceiros: o Prep.pro pode receber comissão, sem custo a mais para você.</span></div>` : ''}
+    <span class="tiny mut">Links de parceiros: o prep-pro.app pode receber comissão, sem custo a mais para você.</span></div>` : ''}
   ${d.stages.map(s => `<div class="card" style="gap:4px"><b>${esc(s.nome)}</b>${s.itens.map(i => `<div class="row" style="gap:10px;padding:4px 0"><span style="width:18px;text-align:center">${ST_ICO[i.status] || ST_ICO.lista}</span><span class="small">${esc(i.nome)}</span></div>`).join('')}</div>`).join('')}
   <div class="card" style="gap:6px;text-align:center"><b>Todo carro preparado começou como um sonho.</b><span class="small mut">Planeje o seu com As 5 Marchas: orçamento, gastos, preparadores e dinamômetro num só lugar.</span></div>
   ${cta}`;
@@ -1756,7 +1756,7 @@ function viewPlanos() {
     ${PLANO.map(r => `<div class="item"><span class="nm small">${r[0]}</span><span style="width:70px;text-align:center" class="small mut">${r[1]}</span><span style="width:80px;text-align:center" class="small">${r[2]}</span></div>`).join('')}
   </div>
   ${pro ? '' : `<div class="card" style="border-color:#5A3520;gap:8px">
-    <div class="row between"><b>Prep.pro PRO</b><b style="font-size:22px">${brl2(PRO_PRECO)}<span class="small mut" style="font-weight:500">/mês</span></b></div>
+    <div class="row between"><b>Plano PRO</b><b style="font-size:22px">${brl2(PRO_PRECO)}<span class="small mut" style="font-weight:500">/mês</span></b></div>
     <span class="small mut">Sem fidelidade. Cancele quando quiser.</span>
     ${pf.quer_pro_em ? '<span class="small" style="color:var(--ok2)">Interesse registrado ✓ Avisamos assim que o pagamento abrir.</span>' : '<button class="btn" id="querpro">QUERO SER PRO</button>'}
     <span class="tiny mut">O pagamento pelo app abre em breve. Até lá, você usa tudo do plano grátis normalmente.</span>
@@ -1773,7 +1773,7 @@ async function openCupons() { if (S.view !== 'cupons') S.cupBack = S.view; await
 function viewCupons() {
   const l = S.cupons || [], eco = economiaCupons();
   return `<div class="row"><button class="icon-btn" id="cpback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Cupons</h1></div>
-  <span class="small mut">Descontos negociados pelo Prep.pro com parceiros.${eco ? ' Economia média somada: <b style="color:var(--fg)">' + brl(eco) + '</b>.' : ''}</span>
+  <span class="small mut">Descontos negociados pelo prep-pro.app com parceiros.${eco ? ' Economia média somada: <b style="color:var(--fg)">' + brl(eco) + '</b>.' : ''}</span>
   ${l.length ? l.map(c => { const cod = S.codigos[c.id];
     return `<div class="card" style="gap:6px">
       <div class="row between"><span class="tiny" style="letter-spacing:1.5px;font-weight:700;color:var(--mut)">${esc(c.parceiro.toUpperCase())}</span>${c.so_pro ? '<span class="tiny" style="color:var(--acc2);font-weight:700">PRO</span>' : ''}</div>
@@ -1806,7 +1806,7 @@ function showTermos() {
   <div class="card" style="max-width:560px;width:100%;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;background:#17191C;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);gap:10px">
     <div class="row between"><h2 style="margin:0">Termos de uso e privacidade</h2><button class="x" id="termosx" aria-label="Fechar">×</button></div>
     <span class="tiny mut">Versão preliminar · outubro de 2026</span>
-    <span class="small" style="line-height:1.5">O Prep.pro é uma ferramenta da <b>16X Consultoria Ltda.</b> para planejar projetos de preparação automotiva com o método As 5 Marchas.</span>
+    <span class="small" style="line-height:1.5">O prep-pro.app é uma ferramenta da <b>16X Consultoria Ltda.</b> para planejar projetos de preparação automotiva com o método As 5 Marchas.</span>
     <b>Seus dados</b>
     <span class="small mut" style="line-height:1.5">Usamos nome, contato e cidade para criar sua conta, mostrar preparadores perto de você e, se você autorizar, enviar ofertas e cupons. Os dados dos seus projetos (peças, gastos, prazos) podem ser usados de forma anônima e agregada para gerar médias e indicações para todos os usuários. Nunca vendemos seus dados pessoais.</span>
     <b>Seus direitos (LGPD)</b>
@@ -1903,9 +1903,9 @@ async function loginGoogle() {
 const precisaCompletar = () => !!(S.perfil && (!S.perfil.termos_em || !S.perfil.celular || !S.perfil.uf));
 function viewCompletar() {
   const pf = S.perfil || {}, uso = pf.perfil_uso || 'entusiasta', nome = pf.nome || (S.user.user_metadata && (S.user.user_metadata.full_name || S.user.user_metadata.name)) || '';
-  return `<div class="brand">PREP<b>.PRO</b></div>
+  return `<div class="brand">PREP-PRO<b>.APP</b></div>
   <h1 style="font-size:34px">Falta pouco${nome ? ', ' + esc(nome.split(' ')[0]) : ''}!</h1>
-  <p class="mut" style="margin-top:-6px">Complete o cadastro para o Prep.pro mostrar preparadores, cupons e ofertas da sua região.</p>
+  <p class="mut" style="margin-top:-6px">Complete o cadastro para o prep-pro.app mostrar preparadores, cupons e ofertas da sua região.</p>
   <div class="col">
     <label class="f">Nome<input id="nome" autocomplete="name" value="${esc(nome)}"></label>
     <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" value="${esc(pf.celular || '')}" placeholder="(65) 99999-9999"></label>
@@ -1917,7 +1917,7 @@ function viewCompletar() {
       <div class="usogrid">${USO_CARDS.map(u => `<button type="button" class="uso ${u[0] === uso ? 'on' : ''}" data-uso="${u[0]}" aria-pressed="${u[0] === uso}">${u[3]}<b>${u[1]}</b><span>${u[2]}</span></button>`).join('')}</div>
       <span class="tiny mut" id="usohint" style="display:${/preparador|loja/.test(uso) ? '' : 'none'}">Depois você completa os dados para aparecer para clientes da sua cidade.</span>
     </div>
-    <label class="f">Como conheceu o Prep.pro?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option ${pf.como_conheceu === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
+    <label class="f">Como conheceu o prep-pro.app?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option ${pf.como_conheceu === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" ${pf.termos_em ? (pf.aceita_ofertas ? 'checked' : '') : 'checked'} style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
     ${pf.termos_em ? '' : `<label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>`}
     <button class="btn" id="completar">CONTINUAR</button>
@@ -2174,7 +2174,7 @@ function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
     : v === 'dyno' ? viewDyno() : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : v === 'share' ? viewShare() : v === 'publico' ? viewPublico() : '<div class="center mut">Carregando…</div>';
-  $app.insertAdjacentHTML('beforeend', `<footer class="ver">Prep.pro é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
+  $app.insertAdjacentHTML('beforeend', `<footer class="ver">prep-pro.app é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
 }

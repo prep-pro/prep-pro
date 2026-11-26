@@ -1,4 +1,4 @@
-# Prep.pro
+# prep-pro.app
 
 Ferramenta da **16X Consultoria Ltda.** Todos os direitos reservados (veja `LICENSE`).
 
