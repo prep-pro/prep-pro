@@ -234,7 +234,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '10.4';
+const APP_VERSION = '10.5';
 const LOGO = `<span class="lgt">PREP-PRO<b>.APP</b></span><svg class="vento" viewBox="748 84 222 152" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"><path d="M760,132 H870 a22,22 0 1 0 -22,-22"/><path d="M770,168 H930 a26,26 0 1 1 -26,26"/><path d="M760,204 H850"/></g></svg>`;
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
@@ -283,9 +283,38 @@ async function init() {
   S.user = session?.user || null;
   if (S.view === 'newpass') return;
   const pub = new URLSearchParams(location.search).get('p');
+  registrarVisita(pub);
   if (pub && /^[a-z0-9]{6,20}$/.test(pub)) return openPublico(pub);
   if (S.user) await loadGarage(); else { S.view = 'login'; render(); }
 }
+
+// ---------------- Métricas (sem dados pessoais) ----------------
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function visitante() { let v = lsGet('pp_vid'); if (!v) { v = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).slice(0, 36); lsSet('pp_vid', v); } return v; }
+function origemAtual() {
+  const q = new URLSearchParams(location.search), utm = q.get('utm_source') || q.get('ref');
+  let o = utm ? utm.toLowerCase().slice(0, 40) : '';
+  if (!o && document.referrer) {
+    try { const h = new URL(document.referrer).hostname.replace(/^www\.|^l\.|^lm\.|^m\./, ''); if (!/prep-pro\.app|netlify\.app/.test(h)) o = h; } catch (e) {}
+  }
+  const mapa = { 'instagram.com': 'instagram', 'facebook.com': 'facebook', 'google.com': 'google', 'google.com.br': 'google', 'youtube.com': 'youtube', 'tiktok.com': 'tiktok', 'wa.me': 'whatsapp', 'web.whatsapp.com': 'whatsapp', 't.co': 'x/twitter' };
+  o = mapa[o] || o;
+  if (o) lsSet('pp_origem', o);
+  return o || lsGet('pp_origem') || '';
+}
+function track(tipo, extra) {
+  try {
+    sb.from('eventos').insert(Object.assign({ visitante: visitante(), user_id: S.user ? S.user.id : null, tipo, pagina: String(S.view || '').slice(0, 60),
+      origem: origemAtual().slice(0, 80) || null, dispositivo: /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'celular' : 'computador' }, extra || {})).then(() => {}, () => {});
+  } catch (e) {}
+}
+function registrarVisita(slug) {
+  let novo = true; try { novo = !sessionStorage.getItem('pp_visita'); sessionStorage.setItem('pp_visita', '1'); } catch (e) {}
+  const app = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (novo) track('visita', { detalhe: app ? 'app instalado' : null, slug: slug ? String(slug).slice(0, 20) : null });
+}
+window.addEventListener('appinstalled', () => track('instalar'));
 
 // ---------------- Login e senha ----------------
 function viewLogin() {
@@ -311,7 +340,7 @@ function viewLogin() {
     </div>
     <label class="f">Como conheceu o prep-pro.app?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option>${c}</option>`).join('')}</select></label>
     <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" checked style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
-    <label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>
+    <label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Tenho 18 anos ou mais, li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">Termos de Uso (EULA) e a Política de Privacidade</button></span></label>
     <div class="card" style="gap:4px;padding:12px 14px"><span class="small"><b>Começa grátis.</b> <span class="mut">Sem cartão. Se quiser, depois conheça o PRO: os cupons dos parceiros já pagam a assinatura.</span></span></div>` : ''}
     <button class="btn" id="go" ${S.busy ? 'disabled' : ''}>${signup ? 'CRIAR MINHA CONTA' : 'ENTRAR'}</button>
     ${signup ? `<div class="row" style="justify-content:center;gap:6px"><span class="small mut">Já tem conta?</span><button class="link" data-mode="entrar">Entrar</button></div>`
@@ -1240,13 +1269,14 @@ function openBanner(id) {
 }
 // Admin
 async function openAdmin(tab) {
-  S.atab = tab || S.atab || 'ofertas'; S.view = 'admin';
+  S.atab = tab || S.atab || 'metricas'; S.view = 'admin';
   if (!S.adminTpl) { const { data } = await sb.from('template_stages').select('nome,ordem,template_items(id,nome,ordem)').order('ordem'); S.adminTpl = data || []; }
   await Promise.all([loadCatalog(), loadCars()]);
   if (S.atab === 'cliques') await loadClicks();
   if (S.atab === 'preparadores') await loadAdminPreps();
   if (S.atab === 'cupons') await loadAdminCupons();
   if (S.atab === 'usuarios') await loadAdminUsers();
+  if (S.atab === 'metricas') await loadMetricas();
   render();
 }
 function tplItemName(id) { for (const s of S.adminTpl || []) { const t = (s.template_items || []).find(t => t.id === id); if (t) return t.nome; } return ''; }
@@ -1271,6 +1301,8 @@ function viewAdmin() {
     body = viewAdminCupons();
   } else if (t === 'usuarios') {
     body = viewAdminUsers();
+  } else if (t === 'metricas') {
+    body = viewMetricas();
   } else {
     const c = S.clicks || { links: {}, banners: {} };
     const cp = S.compras || {};
@@ -1282,8 +1314,39 @@ function viewAdmin() {
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
   return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
-    <div class="tabs">${[['ofertas', 'Ofertas'], ['cupons', 'Cupons'], ['parceiros', 'Banners'], ['preparadores', 'Preparad.'], ['usuarios', 'Usuários'], ['cliques', 'Cliques']].map(x => `<button class="${t === x[0] ? 'on' : ''}" data-atab="${x[0]}">${x[1]}</button>`).join('')}</div>
+    <div class="tabs">${[['metricas', 'Métricas'], ['ofertas', 'Ofertas'], ['cupons', 'Cupons'], ['parceiros', 'Banners'], ['preparadores', 'Preparad.'], ['usuarios', 'Usuários'], ['cliques', 'Cliques']].map(x => `<button class="${t === x[0] ? 'on' : ''}" data-atab="${x[0]}">${x[1]}</button>`).join('')}</div>
     ${body}`;
+}
+async function loadMetricas() {
+  const { data, error } = await sb.rpc('metricas', { p_dias: S.mDias || 7 });
+  S.metr = error ? { erro: error.message } : data;
+}
+function viewMetricas() {
+  const m = S.metr, dias = S.mDias || 7;
+  const per = `<div class="row" style="gap:8px">${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [90, '90 dias']].map(x => `<button class="btn ${dias === x[0] ? 'sm' : 'ghost sm'}" data-mdias="${x[0]}" style="flex:1">${x[1]}</button>`).join('')}</div>`;
+  if (!m) return per + '<p class="small mut">Carregando…</p>';
+  if (m.erro) return per + `<p class="small mut">Não consegui carregar: ${esc(m.erro)}</p>`;
+  const t = m.total, pc = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
+  const kpi = (l, v, sub) => `<div class="kpi"><span>${l}</span><b>${fmtNum(v)}</b>${sub ? `<span class="tiny mut">${sub}</span>` : ''}</div>`;
+  const ds = m.dias || [], max = Math.max(1, ...ds.map(d => Math.max(d.visitantes, d.cadastros)));
+  const bw = Math.max(4, Math.min(26, Math.floor(300 / Math.max(1, ds.length)) - 4));
+  const graf = ds.length > 1 ? `<div class="card" style="gap:8px"><b>Por dia</b>
+    <div class="row" style="gap:14px"><span class="tiny"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8A8F98;margin-right:5px"></i>Visitantes</span><span class="tiny"><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--acc);margin-right:5px"></i>Cadastros</span></div>
+    <div style="display:flex;align-items:flex-end;gap:4px;height:130px;overflow-x:auto;padding-top:6px">${ds.map(d => `<div title="${fmtData(d.dia + 'T12:00')}: ${d.visitantes} visitantes, ${d.cadastros} cadastros" style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:none">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:104px"><i style="width:${bw / 2}px;height:${Math.max(2, d.visitantes / max * 100)}px;background:#8A8F98;border-radius:3px 3px 0 0"></i><i style="width:${bw / 2}px;height:${Math.max(d.cadastros ? 2 : 0, d.cadastros / max * 100)}px;background:var(--acc);border-radius:3px 3px 0 0"></i></div>
+      <span class="tiny mut" style="font-size:9px">${String(d.dia).slice(8, 10)}</span></div>`).join('')}</div></div>` : '';
+  const lista = (titulo, arr, lab) => `<div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">${titulo}</b>${(arr || []).length ? arr.map(x => `<div class="item"><span class="nm">${esc(lab(x))}</span><b>${fmtNum(x.n)}</b></div>`).join('') : '<p class="small mut">Ainda sem dados.</p>'}</div>`;
+  return `${per}
+  <div class="kpis">${kpi('Visitantes', t.visitantes, t.visitantes ? Math.round(t.celular / t.visitantes * 100) + '% no celular' : '')}${kpi('Cadastros', t.cadastros, 'conversão ' + pc(t.cadastros, t.visitantes))}</div>
+  <div class="kpis">${kpi('Projetos criados', t.projetos)}${kpi('Gastos lançados', t.gastos)}</div>
+  <div class="kpis">${kpi('Visitas em links públicos', t.publico)}${kpi('Cliques em ofertas', t.ofertas)}</div>
+  <div class="kpis">${kpi('Compartilhamentos', t.compartilhar)}${kpi('Usuários no total', t.usuarios_total, t.ativos + ' ativos no período')}</div>
+  ${graf}
+  ${lista('De onde vieram (visitantes)', m.origens, x => x.origem)}
+  ${lista('Como conheceu (cadastro)', m.como_conheceu, x => x.origem)}
+  ${lista('Links públicos mais vistos', m.links_publicos, x => x.projeto || 'projeto')}
+  <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Últimos cadastros</b>${(m.ultimos_cadastros || []).map(u => `<div class="item"><span class="nm">${esc(u.nome)}<br><span class="tiny mut">${esc([u.cidade, u.uf].filter(Boolean).join('/'))}${u.como ? ' · ' + esc(u.como) : ''}</span></span><span class="tiny mut">${new Date(u.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></div>`).join('')}</div>
+  <p class="tiny mut">Dica: ao mandar o link, use <b>prep-pro.app/?ref=nome</b> (ex.: ?ref=grupo-s10) para ver aqui de onde veio cada visita. "Direto / WhatsApp" é quem abriu o link sem origem; o WhatsApp não informa a origem.</p>`;
 }
 function posLabel(b) { if (b.posicao === 'stage') { const s = (S.adminTpl || []).find(x => x.ordem === b.stage_ordem); return s ? s.nome : 'Stage ' + b.stage_ordem; } return b.posicao === 'garagem' ? 'Garagem' : 'Aba Gastos'; }
 async function loadClicks() {
@@ -1586,12 +1649,12 @@ function shareResumo() {
   const ganho = d0 && d1 && num(d0.potencia_cv) ? Math.round((num(d1.potencia_cv) / num(d0.potencia_cv) - 1) * 100) : null;
   return { p, total: all.length, feitos, d0, d1, ganho, inv: sumBy(P.exp, e => e.valor_realizado), pct: all.length ? Math.round(feitos / all.length * 100) : 0, marcha: S.P.p.marcha || currentPhase() };
 }
-function shareUrl() { const p = S.P.p; return p.publico && p.slug ? location.origin + '/?p=' + p.slug : location.origin; }
-function shareText(r) {
+function shareUrl(canal) { const p = S.P.p, u = p.publico && p.slug ? location.origin + '/?p=' + p.slug : location.origin + '/'; return canal ? u + (u.includes('?') ? '&' : '?') + 'utm_source=' + canal : u; }
+function shareText(r, canal) {
   const partes = [`${r.p.nome} · ${carLine(r.p)}`, `${r.feitos} de ${r.total} itens instalados (${r.pct}%)`];
   if (r.d1) partes.push(`${fmtNum(num(r.d0.potencia_cv))} → ${fmtNum(num(r.d1.potencia_cv))} cv no dinamômetro${r.ganho !== null ? ` (${r.ganho >= 0 ? '+' : ''}${r.ganho}%)` : ''}`);
   if (r.p.publico_valores) partes.push(brl(r.inv) + ' investidos');
-  return `🏁 Meu projeto no prep-pro.app\n${partes.join('\n')}\n\n${r.p.publico ? 'Acompanhe: ' : 'Monte o seu plano grátis: '}${shareUrl()}`;
+  return `🏁 Meu projeto no prep-pro.app\n${partes.join('\n')}\n\n${r.p.publico ? 'Acompanhe: ' : 'Monte o seu plano grátis: '}${shareUrl(canal)}`;
 }
 async function openShare() {
   S.view = 'share'; S.shImg = null; render(); window.scrollTo(0, 0);
@@ -1606,7 +1669,7 @@ function viewShare() {
   ${'publico' in p ? `<div class="card">
     <label class="row" style="gap:12px;align-items:flex-start"><input type="checkbox" data-shpub ${p.publico ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Link para acompanhar</b><br><span class="small mut">Quem tiver o link vê o plano, as peças que você usou (com o link da loja quando tiver oferta) e o dinamômetro. Sem seus contatos.</span></span></label>
     ${p.publico ? `<label class="row" style="gap:12px;align-items:flex-start"><input type="checkbox" data-shval ${p.publico_valores ? 'checked' : ''} style="width:24px;height:24px;accent-color:var(--acc);flex:none;margin-top:2px"><span><b>Mostrar quanto já investi</b><br><span class="small mut">Desligado, ninguém vê o total nem o preço que você pagou em cada peça.</span></span></label>
-    <div class="row" style="gap:8px"><input readonly value="${esc(shareUrl())}" style="flex:1;min-width:0" aria-label="Link do projeto"><button class="btn ghost sm" id="shcopy">Copiar</button></div>` : ''}
+    <div class="row" style="gap:8px"><input readonly value="${esc(shareUrl('link'))}" style="flex:1;min-width:0" aria-label="Link do projeto"><button class="btn ghost sm" id="shcopy">Copiar</button></div>` : ''}
   </div>` : ''}
   <button class="btn" id="shwa">ENVIAR NO WHATSAPP</button>
   <button class="btn ghost" id="shnative">Postar nas redes (Instagram, Stories…)</button>
@@ -1666,25 +1729,26 @@ async function shareImage(r) {
   return { blob, url: URL.createObjectURL(blob) };
 }
 async function shareNative() {
-  const r = shareResumo(), txt = shareText(r);
+  const r = shareResumo(), txt = shareText(r, 'redes'); track('compartilhar', { detalhe: 'redes', slug: r.p.slug || null });
   if (!S.shImg) S.shImg = await shareImage(r);
   const file = new File([S.shImg.blob], 'prep-pro-' + (r.p.slug || 'projeto') + '.png', { type: 'image/png' });
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) return await navigator.share({ files: [file], text: txt });
-    if (navigator.share) return await navigator.share({ text: txt, url: shareUrl() });
+    if (navigator.share) return await navigator.share({ text: txt, url: shareUrl('redes') });
   } catch (e) { if (e.name === 'AbortError') return; }
   shareDown(); toast('Imagem salva. Poste nas redes e cole o texto.'); try { await navigator.clipboard.writeText(txt); } catch (e) {}
 }
-function shareWa() { window.open('https://wa.me/?text=' + encodeURIComponent(shareText(shareResumo())), '_blank', 'noopener'); }
+function shareWa() { track('compartilhar', { detalhe: 'whatsapp', slug: S.P.p.slug || null }); window.open('https://wa.me/?text=' + encodeURIComponent(shareText(shareResumo(), 'whatsapp')), '_blank', 'noopener'); }
 function shareDown() { if (!S.shImg) return; const a = document.createElement('a'); a.href = S.shImg.url; a.download = 'prep-pro-' + (S.P.p.slug || 'projeto') + '.png'; document.body.appendChild(a); a.click(); a.remove(); }
-async function shareCopy() { try { await navigator.clipboard.writeText(shareUrl()); toast('Link copiado ✓'); } catch (e) { toast('Não consegui copiar. Segure no link para copiar.'); } }
+async function shareCopy() { track('compartilhar', { detalhe: 'link copiado', slug: S.P.p.slug || null }); try { await navigator.clipboard.writeText(shareUrl('link')); toast('Link copiado ✓'); } catch (e) { toast('Não consegui copiar. Segure no link para copiar.'); } }
 
 // Página pública de um projeto (?p=código) — funciona sem login
 const ST_ICO = { instalado: '<b style="color:var(--ok2)">✓</b>', comprado: '<b style="color:var(--acc2)">●</b>', lista: '<span class="mut">○</span>' };
 async function openPublico(slug) {
   S.view = 'publico'; render();
   const { data, error } = await sb.rpc('projeto_publico', { p_slug: slug });
-  S.pub = error ? { erro: true } : (data || { erro: true }); render();
+  S.pub = error ? { erro: true } : (data || { erro: true }); S.pubSlug = slug; render();
+  if (!S.pub.erro) track('publico_visita', { slug: String(slug).slice(0, 20) });
 }
 function viewPublico() {
   const d = S.pub;
@@ -1710,7 +1774,7 @@ function viewPublico() {
       ${x.produto && x.produto.imagem ? `<img src="${esc(x.produto.imagem)}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:contain;background:#fff;border-radius:10px;flex:none">` : `<span style="width:56px;height:56px;border-radius:10px;background:var(--card2);flex:none;display:grid;place-items:center;color:var(--mut)">⚙</span>`}
       <div class="col" style="gap:2px;flex:1;min-width:0"><span class="small" style="font-weight:600">${esc(x.nome)}</span>
         ${x.valor !== null && x.valor !== undefined ? `<span class="tiny mut">Paguei ${brl(x.valor)}</span>` : ''}
-        ${x.produto && x.produto.url ? `<a class="btn sm" style="margin-top:6px;align-self:flex-start;text-decoration:none" href="${esc(x.produto.url)}" target="_blank" rel="noopener sponsored">Ver no ${esc(LOJAS[x.produto.loja] || 'site da loja')}</a>` : ''}
+        ${x.produto && x.produto.url ? `<a class="btn sm" style="margin-top:6px;align-self:flex-start;text-decoration:none" href="${esc(x.produto.url)}" target="_blank" rel="noopener sponsored" data-pubof="${esc((x.nome || '').slice(0, 150))}">Ver no ${esc(LOJAS[x.produto.loja] || 'site da loja')}</a>` : ''}
       </div></div>`).join('')}
     <span class="tiny mut">Links de parceiros: o prep-pro.app pode receber comissão, sem custo a mais para você.</span></div>` : ''}
   ${d.stages.map(s => `<div class="card" style="gap:4px"><b>${esc(s.nome)}</b>${s.itens.map(i => `<div class="row" style="gap:10px;padding:4px 0"><span style="width:18px;text-align:center">${ST_ICO[i.status] || ST_ICO.lista}</span><span class="small">${esc(i.nome)}</span></div>`).join('')}</div>`).join('')}
@@ -1810,20 +1874,35 @@ function cuponsCard() {
   </button>`;
 }
 // Termos (sobreposição: não apaga o que a pessoa já digitou no cadastro)
+const TERMOS_VERSAO = '1.0', TERMOS_VIGENCIA = '2026-11-26T01:30:00Z';
+const termosOk = pf => !!(pf && pf.termos_em && pf.termos_em >= TERMOS_VIGENCIA);
 function showTermos() {
   document.body.insertAdjacentHTML('beforeend', `<div id="termosov" style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center">
   <div class="card" style="max-width:560px;width:100%;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;background:#17191C;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);gap:10px">
-    <div class="row between"><h2 style="margin:0">Termos de uso e privacidade</h2><button class="x" id="termosx" aria-label="Fechar">×</button></div>
-    <span class="tiny mut">Versão preliminar · outubro de 2026</span>
-    <span class="small" style="line-height:1.5">O prep-pro.app é uma ferramenta da <b>16X Consultoria Ltda.</b> para planejar projetos de preparação automotiva com o método As 5 Marchas.</span>
-    <b>Seus dados</b>
-    <span class="small mut" style="line-height:1.5">Usamos nome, contato e cidade para criar sua conta, mostrar preparadores perto de você e, se você autorizar, enviar ofertas e cupons. Os dados dos seus projetos (peças, gastos, prazos) podem ser usados de forma anônima e agregada para gerar médias e indicações para todos os usuários. Nunca vendemos seus dados pessoais.</span>
-    <b>Seus direitos (LGPD)</b>
-    <span class="small mut" style="line-height:1.5">Você pode pedir acesso, correção ou exclusão dos seus dados a qualquer momento, e desmarcar o recebimento de ofertas no seu perfil.</span>
-    <b>Links e parceiros</b>
-    <span class="small mut" style="line-height:1.5">Alguns links de produtos são de afiliados e banners e destaques são espaços pagos por parceiros, sempre identificados. Preços e condições são de responsabilidade das lojas e preparadores.</span>
-    <b>Plano PRO</b>
-    <span class="small mut" style="line-height:1.5">Assinatura mensal, sem fidelidade. O plano grátis continua disponível.</span>
+    <div class="row between"><h2 style="margin:0">Termos de Uso (EULA) e Privacidade</h2><button class="x" id="termosx" aria-label="Fechar">×</button></div>
+    <span class="tiny mut">Versão ${TERMOS_VERSAO} · vigente desde 25 de novembro de 2026</span>
+    <b>1. Aceite</b>
+    <span class="small mut" style="line-height:1.5">Ao criar sua conta ou usar o prep-pro.app você concorda com estes Termos de Uso (EULA) e com a Política de Privacidade abaixo. Se não concordar, não use o app. É preciso ter 18 anos ou mais.</span>
+    <b>2. O que é o prep-pro.app</b>
+    <span class="small mut" style="line-height:1.5">Uma ferramenta da <b>16X Consultoria Ltda.</b> para planejar, organizar e acompanhar projetos de preparação automotiva com o método As 5 Marchas. O conteúdo (planos, itens, explicações, cálculos e sugestões) é <b>informativo e educativo</b>. O app não é oficina, não executa serviços e não presta consultoria técnica ou de engenharia para o seu veículo.</span>
+    <b>3. Riscos da preparação</b>
+    <span class="small mut" style="line-height:1.5">Modificar um veículo envolve riscos ao motor, à transmissão, aos freios, à segurança das pessoas e à garantia de fábrica. As informações do app são referências gerais e não consideram as condições específicas do seu carro. Toda modificação deve ser avaliada e executada por profissional qualificado. As decisões sobre o seu projeto e a sua execução são de sua inteira responsabilidade.</span>
+    <b>4. Legislação e uso responsável</b>
+    <span class="small mut" style="line-height:1.5">Você é o responsável por regularizar as modificações do seu veículo (autorização prévia do Detran, inspeção e CSV, ou homologação quando exigida, conforme o CTB e a Resolução Contran 916/2022), por respeitar as normas de emissões e por usar o veículo dentro da lei. Velocidade e competições, só em locais e eventos autorizados. O prep-pro.app não incentiva racha nem direção perigosa.</span>
+    <b>5. Preparadores, lojas e parceiros</b>
+    <span class="small mut" style="line-height:1.5">Preparadores, oficinas, lojas, anunciantes e parceiros são independentes da 16X. Não intermediamos negociações e não garantimos preços, prazos, estoque, entrega, qualidade de peças ou serviços. Alguns links são de afiliados e podem gerar comissão para a 16X, sem custo extra para você. O selo "verificado" indica apenas que confirmamos a existência da oficina. Destaques e banners são espaços pagos, sempre identificados.</span>
+    <b>6. O que você publica</b>
+    <span class="small mut" style="line-height:1.5">Você é responsável pelas informações que cadastra e pelo que decide mostrar no link público do seu projeto. É proibido publicar conteúdo ilegal, ofensivo, enganoso ou de terceiros sem autorização. Podemos remover conteúdo e suspender ou bloquear contas em caso de abuso, fraude ou violação destes termos.</span>
+    <b>7. Licença de uso</b>
+    <span class="small mut" style="line-height:1.5">Concedemos uma licença pessoal, gratuita (ou paga, no plano PRO), não exclusiva e intransferível para usar o app. Não é permitido copiar, revender, fazer engenharia reversa, extrair dados de forma automatizada ou usar o app para fins ilícitos. A marca prep-pro.app, o método As 5 Marchas e o conteúdo do app pertencem à 16X Consultoria Ltda.</span>
+    <b>8. Limitação de responsabilidade</b>
+    <span class="small mut" style="line-height:1.5">O app é oferecido "no estado em que se encontra" e pode ter falhas ou ficar indisponível. Na máxima extensão permitida pela lei, a 16X não se responsabiliza por danos ao veículo, ao motor ou a pessoas, multas, apreensões, perdas financeiras ou lucros cessantes decorrentes do uso das informações do app, de decisões tomadas a partir delas ou de produtos e serviços de terceiros. Nada nestes termos afasta direitos garantidos pelo Código de Defesa do Consumidor.</span>
+    <b>9. Plano PRO</b>
+    <span class="small mut" style="line-height:1.5">Assinatura mensal, sem fidelidade, que pode ser cancelada a qualquer momento. O plano grátis continua disponível. Preços e benefícios podem mudar, com aviso prévio no app.</span>
+    <b>10. Privacidade (LGPD)</b>
+    <span class="small mut" style="line-height:1.5">Usamos nome, celular, CEP e cidade para criar sua conta, mostrar preparadores e ofertas da sua região e, se você autorizar, enviar cupons. Os dados dos seus projetos ficam visíveis só para você, a menos que você ligue o link público. Para entender o uso do app, registramos visitas e cliques com um código aleatório guardado no seu aparelho, sem IP, nome ou e-mail. Dados de uso podem ser analisados de forma agregada e anônima para melhorar o app e as recomendações. Não vendemos seus dados. Você pode pedir acesso, correção ou exclusão a qualquer momento pelo e-mail <b>privacidade@prep-pro.app</b>.</span>
+    <b>11. Mudanças e foro</b>
+    <span class="small mut" style="line-height:1.5">Podemos atualizar estes termos; quando isso acontecer, vamos pedir um novo aceite no app. Vale a lei brasileira, e fica eleito o foro do domicílio do usuário.</span>
     <button class="btn" id="termosok">ENTENDI</button>
   </div></div>`);
   const ov = document.getElementById('termosov');
@@ -1909,12 +1988,13 @@ async function loginGoogle() {
   const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
   if (error) { if (btn) { btn.disabled = false; btn.textContent = 'Continuar com Google'; } fail(/provider is not enabled|Unsupported provider/i.test(error.message) ? 'O login com Google ainda não foi ativado.' : error); }
 }
-const precisaCompletar = () => !!(S.perfil && (!S.perfil.termos_em || !S.perfil.celular || !S.perfil.uf));
+const precisaCompletar = () => !!(S.perfil && (!termosOk(S.perfil) || !S.perfil.celular || !S.perfil.uf));
 function viewCompletar() {
   const pf = S.perfil || {}, uso = pf.perfil_uso || 'entusiasta', nome = pf.nome || (S.user.user_metadata && (S.user.user_metadata.full_name || S.user.user_metadata.name)) || '';
   return `<div class="brand">${LOGO}</div>
-  <h1 style="font-size:34px">Falta pouco${nome ? ', ' + esc(nome.split(' ')[0]) : ''}!</h1>
-  <p class="mut" style="margin-top:-6px">Complete o cadastro para o prep-pro.app mostrar preparadores, cupons e ofertas da sua região.</p>
+  ${pf.termos_em && pf.celular && pf.uf ? `<h1 style="font-size:34px">Atualizamos os Termos de Uso</h1>
+  <p class="mut" style="margin-top:-6px">Leia e aceite a nova versão para continuar usando o prep-pro.app.</p>` : `<h1 style="font-size:34px">Falta pouco${nome ? ', ' + esc(nome.split(' ')[0]) : ''}!</h1>
+  <p class="mut" style="margin-top:-6px">Complete o cadastro para o prep-pro.app mostrar preparadores, cupons e ofertas da sua região.</p>`}
   <div class="col">
     <label class="f">Nome<input id="nome" autocomplete="name" value="${esc(nome)}"></label>
     <label class="f">Celular (WhatsApp)<input id="cel" autocomplete="tel" inputmode="tel" value="${esc(pf.celular || '')}" placeholder="(65) 99999-9999"></label>
@@ -1928,7 +2008,7 @@ function viewCompletar() {
     </div>
     <label class="f">Como conheceu o prep-pro.app?<select id="scomo"><option value="">Escolha</option>${COMO.map(c => `<option ${pf.como_conheceu === c ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
     <label class="row" style="gap:12px;align-items:flex-start"><input id="sofertas" type="checkbox" ${pf.termos_em ? (pf.aceita_ofertas ? 'checked' : '') : 'checked'} style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Quero receber cupons e ofertas de parceiros</span></label>
-    ${pf.termos_em ? '' : `<label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">termos de uso e privacidade</button></span></label>`}
+    ${termosOk(pf) ? '' : `<label class="row" style="gap:12px;align-items:flex-start"><input id="stermos" type="checkbox" style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Tenho 18 anos ou mais, li e aceito os <button class="link" id="termos" style="padding:0;font-size:inherit">Termos de Uso (EULA) e a Política de Privacidade</button></span></label>`}
     <button class="btn" id="completar">CONTINUAR</button>
     <button class="link" id="logout" style="align-self:center;color:var(--mut)">Sair</button>
   </div>`;
@@ -2188,6 +2268,7 @@ function render() {
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
 }
 $app.addEventListener('click', async ev => {
+  const pof = ev.target.closest('[data-pubof]'); if (pof) { track('oferta_clique', { slug: S.pubSlug ? String(S.pubSlug).slice(0, 20) : null, detalhe: pof.dataset.pubof }); return; }
   if (S.modal) {
     if (ev.target.id === 'modal' || ev.target.id === 'mcancel') { S.modal = null; return render(); }
     if (ev.target.id === 'mok') { const run = S.modal.run; S.modal = null; render(); return run(); }
@@ -2245,6 +2326,7 @@ $app.addEventListener('click', async ev => {
   if (ds.pickprep) return pickPrep(ds.pickprep);
   if (ds.adest) return adminDestaque(ds.adest, false);
   if (ds.adestx) return adminDestaque(ds.adestx, true);
+  if (ds.mdias) { S.mDias = +ds.mdias; S.metr = null; render(); await loadMetricas(); return render(); }
   if (ds.aver) return adminFlag(ds.aver, 'verificado');
   if (ds.ablq) return adminFlag(ds.ablq, 'bloqueado');
   if (id === 'adback') return loadGarage();
