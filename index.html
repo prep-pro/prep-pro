@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="prep-pro.app">
 <meta name="theme-color" content="#0E0F11">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<link rel="icon" href="icon-192.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon-v3.png">
+<link rel="icon" href="icon-192.png?v=3">
 <title>prep-pro.app · As 5 Marchas da preparação</title>
 <meta name="description" content="Planeje a preparação do seu carro com As 5 Marchas: do sonho ao carro pronto, na ordem certa. Orçamento, gastos, preparadores e dinamômetro num só lugar.">
 <meta property="og:type" content="website">
@@ -66,6 +66,12 @@ h2{margin:0;font-weight:700;font-size:24px;line-height:1.05}
 p{margin:0}
 .mut{color:var(--mut)}.small{font-size:13px}.tiny{font-size:12px}
 .brand{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:1px}.brand b{color:var(--acc)}
+.brand,#splash .lg{display:inline-flex;align-items:flex-end;white-space:nowrap}
+.lgt{display:inline-block;transform:skewX(-10deg)}
+.vento{height:1.25em;width:auto;margin-left:.14em;margin-bottom:-.2em;flex:none;overflow:visible}
+#splash .lg .vento path{stroke-dasharray:260;stroke-dashoffset:260;animation:vento 1s cubic-bezier(.3,.6,.2,1) forwards}
+#splash .lg .vento path:nth-child(1){animation-delay:.9s}#splash .lg .vento path:nth-child(2){animation-delay:1.05s}#splash .lg .vento path:nth-child(3){animation-delay:1.2s}
+@keyframes vento{to{stroke-dashoffset:0}}
 .row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
 .col{display:flex;flex-direction:column;gap:10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
@@ -142,7 +148,7 @@ input.who,input.add{height:42px;background:var(--card2)}
 .spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.spec div{background:var(--card2);border-radius:10px;padding:8px}.spec span{display:block;font-size:11px;color:var(--mut)}.spec b{font:700 16px 'Barlow Condensed',sans-serif}
 #splash{position:fixed;inset:0;z-index:50;background:#0B0C0E;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .6s ease}
 #splash canvas{position:absolute;inset:0;width:100%;height:100%}
-#splash .lg{position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(38px,11.5vw,68px);letter-spacing:3px;white-space:nowrap;color:#F2EFEA;opacity:0;filter:blur(18px);transform:scale(1.18);transition:opacity 1.6s ease,filter 1.6s ease,transform 1.8s cubic-bezier(.2,.8,.2,1),letter-spacing 1.8s ease}
+#splash .lg{position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:clamp(34px,10vw,64px);letter-spacing:3px;white-space:nowrap;color:#F2EFEA;opacity:0;filter:blur(18px);transform:scale(1.18);transition:opacity 1.6s ease,filter 1.6s ease,transform 1.8s cubic-bezier(.2,.8,.2,1),letter-spacing 1.8s ease}
 #splash .lg b{color:var(--acc)}
 #splash .lg.on{opacity:1;filter:blur(0);transform:scale(1);letter-spacing:1px}
 #splash .tl{position:relative;margin-top:4px;font:600 13px Barlow,sans-serif;letter-spacing:5px;color:#A7AAB0;opacity:0;transition:opacity 1s ease .9s}
@@ -157,7 +163,7 @@ input.who,input.add{height:42px;background:var(--card2)}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><canvas id="smoke"></canvas><div class="lg">PREP-PRO<b>.APP</b></div><div class="tl">AS 5 MARCHAS</div></div>
+<div id="splash" aria-hidden="true"><canvas id="smoke"></canvas><div class="lg"><span class="lgt">PREP-PRO<b>.APP</b></span><svg class="vento" viewBox="748 84 222 152" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"><path d="M760,132 H870 a22,22 0 1 0 -22,-22"/><path d="M770,168 H930 a26,26 0 1 1 -26,26"/><path d="M760,204 H850"/></g></svg></div><div class="tl">AS 5 MARCHAS</div></div>
 <div id="app"><div class="center mut">Carregando…</div></div>
 <div id="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -228,7 +234,8 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '10.3';
+const APP_VERSION = '10.4';
+const LOGO = `<span class="lgt">PREP-PRO<b>.APP</b></span><svg class="vento" viewBox="748 84 222 152" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"><path d="M760,132 H870 a22,22 0 1 0 -22,-22"/><path d="M770,168 H930 a26,26 0 1 1 -26,26"/><path d="M760,204 H850"/></g></svg>`;
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
 document.body.insertAdjacentHTML('afterbegin', '<div id="carregando" aria-hidden="true"></div>');
@@ -284,7 +291,7 @@ async function init() {
 function viewLogin() {
   const signup = S.mode === 'criar';
   return `
-  <div class="brand">PREP-PRO<b>.APP</b></div>
+  <div class="brand">${LOGO}</div>
   <h1 style="font-size:40px">Todo carro preparado começou como um sonho.</h1>
   <p class="mut">As 5 Marchas: do sonho ao carro pronto, na ordem certa.</p>
   <div class="col" style="margin-top:8px">
@@ -315,7 +322,7 @@ function viewLogin() {
   </div>`;
 }
 function viewNewPass() {
-  return `<div class="brand">PREP-PRO<b>.APP</b></div><h1>Nova senha</h1>
+  return `<div class="brand">${LOGO}</div><h1>Nova senha</h1>
   <label class="f">Digite a nova senha<input id="np" type="password" autocomplete="new-password" placeholder="mínimo 6 caracteres"></label>
   <button class="btn" id="savepass">SALVAR NOVA SENHA</button>`;
 }
@@ -398,7 +405,7 @@ function viewGarage() {
     </div>`;
   }).join('');
   return `
-  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">PREP-PRO<b>.APP</b></div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">${LOGO}</div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
   ${S.projects.length > 1 || (S.projects[0] && (S.projects[0].project_expenses || []).length) ? (() => { const inv = sumBy(S.projects.flatMap(p => p.project_expenses || []), e => e.valor_realizado); return `<div class="kpis"><div class="kpi"><span>Projetos e sonhos</span><b>${S.projects.length}</b></div><div class="kpi"><span>Investido até agora</span><b>${brl(inv)}</b></div></div>`; })() : ''}
   ${S.projects.length ? cards + '<button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>' : `
@@ -1619,7 +1626,9 @@ async function shareImage(r) {
   const rad = g.createRadialGradient(W * .8, H * .15, 0, W * .8, H * .15, 900); rad.addColorStop(0, 'rgba(255,106,31,.30)'); rad.addColorStop(1, 'rgba(255,106,31,0)'); g.fillStyle = rad; g.fillRect(0, 0, W, H);
   const C = 'Barlow Condensed', B = 'Barlow';
   g.textBaseline = 'alphabetic';
-  g.font = `800 52px "${C}"`; g.fillStyle = '#F2EFEA'; g.fillText('PREP-PRO', 70, 120); g.fillStyle = '#FF6A1F'; g.fillText('.APP', 70 + g.measureText('PREP-PRO').width, 120);
+  g.font = `800 52px "${C}"`; g.save(); g.setTransform(1, 0, -0.176, 1, 120 * 0.176, 0); g.fillStyle = '#F2EFEA'; g.fillText('PREP-PRO', 70, 120); g.fillStyle = '#FF6A1F'; g.fillText('.APP', 70 + g.measureText('PREP-PRO').width, 120); g.restore();
+  { const tw = g.measureText('PREP-PRO.APP').width, k = 52 / 120; g.save(); g.translate(70 + tw + 8 - 755 * k, 120 - 210 * k); g.scale(k, k); g.strokeStyle = '#F2EFEA'; g.lineWidth = 11; g.lineCap = 'round';
+    ['M760,132 H870 a22,22 0 1 0 -22,-22', 'M770,168 H930 a26,26 0 1 1 -26,26', 'M760,204 H850'].forEach(d => g.stroke(new Path2D(d))); g.restore(); }
   const fit = (txt, size, maxW, weight = 800, fam = C) => { let s = size; do { g.font = `${weight} ${s}px "${fam}"`; s -= 4; } while (g.measureText(txt).width > maxW && s > 30); };
   fit(r.p.nome.toUpperCase(), 110, W - 140); g.fillStyle = '#F2EFEA'; g.fillText(r.p.nome.toUpperCase(), 70, 250);
   fit(carLine(r.p), 40, W - 140, 600, B); g.fillStyle = '#A7AAB0'; g.fillText(carLine(r.p), 70, 305);
@@ -1681,11 +1690,11 @@ function viewPublico() {
   const d = S.pub;
   if (!d) return '<div class="center mut">Carregando…</div>';
   const cta = `<button class="btn" id="pubgo">${S.user ? 'IR PARA MINHA GARAGEM' : 'MONTAR O MEU PROJETO GRÁTIS'}</button>`;
-  if (d.erro) return `<div class="brand">PREP-PRO<b>.APP</b></div><h1>Projeto não encontrado</h1><p class="mut">O dono pode ter desligado o link.</p>${cta}`;
+  if (d.erro) return `<div class="brand">${LOGO}</div><h1>Projeto não encontrado</h1><p class="mut">O dono pode ter desligado o link.</p>${cta}`;
   const itens = d.stages.filter(s => !s.legal).flatMap(s => s.itens), feitos = itens.filter(i => i.status === 'instalado').length, pct = itens.length ? Math.round(feitos / itens.length * 100) : 0;
   const dy = d.dyno || [], d0 = dy[0], d1 = dy.length > 1 ? dy[dy.length - 1] : null;
   const ganho = d0 && d1 && num(d0.cv) ? Math.round((num(d1.cv) / num(d0.cv) - 1) * 100) : null;
-  return `<div class="brand">PREP-PRO<b>.APP</b></div>
+  return `<div class="brand">${LOGO}</div>
   <div class="card" style="gap:8px;border-color:#5A3520">
     <span class="tiny" style="color:var(--acc2);font-weight:700;letter-spacing:2px">PROJETO DE ${esc(String(d.dono || '').toUpperCase())}</span>
     <h1 style="font-size:36px;margin:0">${esc(d.nome)}</h1>
@@ -1903,7 +1912,7 @@ async function loginGoogle() {
 const precisaCompletar = () => !!(S.perfil && (!S.perfil.termos_em || !S.perfil.celular || !S.perfil.uf));
 function viewCompletar() {
   const pf = S.perfil || {}, uso = pf.perfil_uso || 'entusiasta', nome = pf.nome || (S.user.user_metadata && (S.user.user_metadata.full_name || S.user.user_metadata.name)) || '';
-  return `<div class="brand">PREP-PRO<b>.APP</b></div>
+  return `<div class="brand">${LOGO}</div>
   <h1 style="font-size:34px">Falta pouco${nome ? ', ' + esc(nome.split(' ')[0]) : ''}!</h1>
   <p class="mut" style="margin-top:-6px">Complete o cadastro para o prep-pro.app mostrar preparadores, cupons e ofertas da sua região.</p>
   <div class="col">
