@@ -234,7 +234,7 @@ const TIPO_COR = { peca: ['#10273A', '#8CCBF7'], mao_de_obra: ['#3A3010', '#FFD6
 const COLORS = ['#9A2A2A','#C9A227','#2D5F94','#2E8B57','#7A4FB5','#D2691E'];
 
 const S = { user: null, view: 'loading', mode: 'entrar', projects: [], cars: [], draft: null, step: 1, P: null, tab: 'marchas', gview: 'lista', phase: null, busy: false, armed: null, form: null, pick: { brand: '', q: '' }, pickOpen: false };
-const APP_VERSION = '10.5';
+const APP_VERSION = '10.6';
 const LOGO = `<span class="lgt">PREP-PRO<b>.APP</b></span><svg class="vento" viewBox="748 84 222 152" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="11" stroke-linecap="round"><path d="M760,132 H870 a22,22 0 1 0 -22,-22"/><path d="M770,168 H930 a26,26 0 1 1 -26,26"/><path d="M760,204 H850"/></g></svg>`;
 const $app = document.getElementById('app');
 // Barra fina no topo enquanto algo carrega
@@ -286,6 +286,69 @@ async function init() {
   registrarVisita(pub);
   if (pub && /^[a-z0-9]{6,20}$/.test(pub)) return openPublico(pub);
   if (S.user) await loadGarage(); else { S.view = 'login'; render(); }
+}
+
+// ---------------- Sugestões e erros ----------------
+const FB_TIPOS = [['melhoria', '💡 Sugestão', 'O que você mudaria ou gostaria de ver no app?'], ['erro', '🐞 Erro', 'O que aconteceu? Em qual tela? O que você esperava que acontecesse?'], ['elogio', '👏 Elogio', 'Conta pra gente o que você curtiu!'], ['outro', '💬 Outro', 'Pode escrever à vontade.']];
+async function openFeedback() {
+  S.fbPrev = S.view === 'feedback' ? (S.fbPrev || 'garage') : S.view; S.fb = S.fb && S.fb.msg ? S.fb : { tipo: 'melhoria', msg: '', contato: true };
+  S.view = 'feedback'; render(); window.scrollTo(0, 0);
+  if (S.user) { const { data } = await sb.from('sugestoes').select('*').eq('user_id', S.user.id).order('criado_em', { ascending: false }).limit(10); S.minhasSug = data || []; if (S.view === 'feedback') render(); }
+}
+function viewFeedback() {
+  const f = S.fb, t = FB_TIPOS.find(x => x[0] === f.tipo) || FB_TIPOS[0];
+  const st = { nova: 'enviada', lida: 'lida pela equipe', resolvida: 'resolvida ✓' };
+  return `<div class="row"><button class="icon-btn" id="fbvoltar" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Fale com a gente</h1></div>
+  <p class="mut" style="margin-top:-6px">O prep-pro.app está começando e cada sugestão conta. Achou um erro, sentiu falta de algo ou tem uma ideia? Manda aqui que a gente lê tudo.</p>
+  <div class="row" style="gap:8px;flex-wrap:wrap">${FB_TIPOS.map(x => `<button class="btn ${f.tipo === x[0] ? 'sm' : 'ghost sm'}" data-fbtipo="${x[0]}" style="flex:1;min-width:40%">${x[1]}</button>`).join('')}</div>
+  <label class="f">Sua mensagem<textarea id="fbmsg" maxlength="2000" rows="6" placeholder="${esc(t[2])}">${esc(f.msg)}</textarea></label>
+  ${S.user ? `<label class="row" style="gap:12px;align-items:flex-start"><input id="fbcont" type="checkbox" ${f.contato ? 'checked' : ''} style="width:22px;height:22px;accent-color:var(--acc);flex:none;margin-top:1px"><span class="small">Pode me chamar no WhatsApp para entender melhor</span></label>` : '<p class="tiny mut">Você não está logado: a mensagem vai sem identificação.</p>'}
+  <button class="btn" id="fbenviar">ENVIAR</button>
+  ${(S.minhasSug || []).length ? `<div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Suas mensagens</b>${S.minhasSug.map(m => `<div class="item" style="align-items:flex-start"><span class="nm">${esc(m.mensagem.length > 90 ? m.mensagem.slice(0, 90) + '…' : m.mensagem)}${m.resposta ? `<br><span class="tiny" style="color:var(--acc2)">Resposta: ${esc(m.resposta)}</span>` : ''}<br><span class="tiny mut">${fmtData(m.criado_em)} · ${st[m.status] || m.status}</span></span></div>`).join('')}</div>` : ''}`;
+}
+async function enviarFeedback() {
+  const msg = (document.getElementById('fbmsg').value || '').trim(); S.fb.msg = msg;
+  const c = document.getElementById('fbcont'); if (c) S.fb.contato = c.checked;
+  if (msg.length < 3) return toast('Escreve um pouquinho mais pra gente entender 🙂');
+  const row = { user_id: S.user ? S.user.id : null, tipo: S.fb.tipo, mensagem: msg.slice(0, 2000), tela: String(S.fbPrev || '').slice(0, 40), versao: APP_VERSION,
+    aparelho: navigator.userAgent.replace(/Mozilla\/5\.0 \(|\) AppleWebKit.*$/g, '').slice(0, 160), pode_contatar: !!(S.user && S.fb.contato) };
+  const { error } = await sb.from('sugestoes').insert(row);
+  if (error) return fail(error);
+  S.fb = null; toast('Recebido! Obrigado por ajudar a melhorar o app ✓');
+  return voltarDoFeedback();
+}
+function voltarDoFeedback() { const v = S.fbPrev || (S.user ? 'garage' : 'login'); if (v === 'garage') return loadGarage(); S.view = v; render(); window.scrollTo(0, 0); }
+// Admin · sugestões
+async function loadAdminSug() {
+  const { data } = await sb.from('sugestoes').select('*').order('criado_em', { ascending: false }).limit(200);
+  S.aSug = data || [];
+  const ids = [...new Set(S.aSug.map(x => x.user_id).filter(Boolean))];
+  S.aSugPf = {};
+  if (ids.length) { const { data: pf } = await sb.from('profiles').select('id,nome,celular,cidade,uf').in('id', ids); (pf || []).forEach(p => S.aSugPf[p.id] = p); }
+  S.sugNovas = S.aSug.filter(x => x.status === 'nova').length;
+}
+function viewAdminSug() {
+  const filtro = S.aSugF || 'abertas', tl = Object.fromEntries(FB_TIPOS.map(x => [x[0], x[1]]));
+  const lst = (S.aSug || []).filter(x => filtro === 'todas' || (filtro === 'abertas' ? x.status !== 'resolvida' : x.status === filtro));
+  return `<div class="row" style="gap:8px">${[['abertas', 'Abertas'], ['resolvida', 'Resolvidas'], ['todas', 'Todas']].map(x => `<button class="btn ${filtro === x[0] ? 'sm' : 'ghost sm'}" data-asugf="${x[0]}" style="flex:1">${x[1]}</button>`).join('')}</div>
+  ${lst.map(x => { const p = S.aSugPf[x.user_id] || {}; const zap = x.pode_contatar && p.celular ? String(p.celular).replace(/\D/g, '') : '';
+    return `<div class="card" style="gap:6px;${x.status === 'nova' ? 'border-color:var(--acc)' : ''}">
+    <div class="row between"><b>${tl[x.tipo] || x.tipo}</b><span class="tiny mut">${new Date(x.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} · ${x.status}</span></div>
+    <span class="small" style="white-space:pre-wrap">${esc(x.mensagem)}</span>
+    <span class="tiny mut">${esc(p.nome || 'Sem login')}${p.cidade ? ' · ' + esc(p.cidade + '/' + (p.uf || '')) : ''} · tela: ${esc(x.tela || '?')} · v${esc(x.versao || '?')}<br>${esc(x.aparelho || '')}</span>
+    ${x.resposta ? `<span class="tiny" style="color:var(--acc2)">Sua resposta: ${esc(x.resposta)}</span>` : ''}
+    <textarea id="asresp-${x.id}" rows="2" maxlength="1000" placeholder="Resposta (a pessoa vê no app)">${esc(x.resposta || '')}</textarea>
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      <button class="btn ghost sm" data-asug="${x.id}" data-asugst="lida">Salvar como lida</button>
+      <button class="btn sm" data-asug="${x.id}" data-asugst="resolvida">Resolvida ✓</button>
+      ${zap ? `<a class="btn ghost sm" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${zap.length <= 11 ? '55' + zap : zap}?text=${encodeURIComponent('Oi ' + (p.nome || '').split(' ')[0] + '! Aqui é do prep-pro.app, sobre a sua mensagem: "' + x.mensagem.slice(0, 120) + '"')}">WhatsApp</a>` : ''}
+    </div></div>`; }).join('') || '<p class="small mut">Nenhuma mensagem aqui.</p>'}`;
+}
+async function salvarSug(id, status) {
+  const el = document.getElementById('asresp-' + id), resposta = el && el.value.trim() ? el.value.trim().slice(0, 1000) : null;
+  const { error } = await sb.from('sugestoes').update({ status, resposta }).eq('id', id);
+  if (error) return fail(error);
+  toast(status === 'resolvida' ? 'Marcada como resolvida ✓' : 'Salva ✓'); await loadAdminSug(); render();
 }
 
 // ---------------- Métricas (sem dados pessoais) ----------------
@@ -434,7 +497,7 @@ function viewGarage() {
     </div>`;
   }).join('');
   return `
-  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">${LOGO}</div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? '<button class="link" id="admin" style="color:var(--mut)">Admin</button>' : ''}<button class="link" id="logout">Sair</button></div></div>
+  <div class="row between"><div class="row" style="gap:8px;align-items:center"><div class="brand">${LOGO}</div>${isPro() ? '<span class="tiny" style="border:1px solid var(--acc);color:var(--acc2);border-radius:6px;padding:2px 6px;font-weight:700;letter-spacing:1px">PRO</span>' : '<button class="link" id="verplanos" style="font-size:12px;padding:4px 0">Seja PRO</button>'}</div><div class="row" style="gap:16px"><button class="link" id="perfil" style="color:var(--mut)">Perfil</button>${S.isAdmin ? `<button class="link" id="admin" style="color:var(--mut)">Admin${S.sugNovas ? ` <span style="background:var(--acc);color:#fff;border-radius:9px;padding:1px 6px;font-size:11px;font-weight:700">${S.sugNovas}</span>` : ''}</button>` : ''}<button class="link" id="logout">Sair</button></div></div>
   <h1>Minha garagem</h1>
   ${S.projects.length > 1 || (S.projects[0] && (S.projects[0].project_expenses || []).length) ? (() => { const inv = sumBy(S.projects.flatMap(p => p.project_expenses || []), e => e.valor_realizado); return `<div class="kpis"><div class="kpi"><span>Projetos e sonhos</span><b>${S.projects.length}</b></div><div class="kpi"><span>Investido até agora</span><b>${brl(inv)}</b></div></div>`; })() : ''}
   ${S.projects.length ? cards + '<button class="btn ghost" id="novo">+ Novo projeto ou sonho</button>' : `
@@ -1196,6 +1259,7 @@ async function loadCatalog() {
     sb.from('banners').select('*')
   ]);
   S.isAdmin = !!(pf.data && pf.data.is_admin); S.perfil = pf.data || null;
+  if (S.isAdmin) sb.from('sugestoes').select('id', { count: 'exact', head: true }).eq('status', 'nova').then(r => { const n = r.count || 0; if (n !== S.sugNovas) { S.sugNovas = n; if (S.view === 'garage') render(); } }, () => {});
   S.offers = of.error ? [] : (of.data || []);
   S.banners = bn.error ? [] : (bn.data || []);
 }
@@ -1277,6 +1341,7 @@ async function openAdmin(tab) {
   if (S.atab === 'cupons') await loadAdminCupons();
   if (S.atab === 'usuarios') await loadAdminUsers();
   if (S.atab === 'metricas') await loadMetricas();
+  if (S.atab === 'sugestoes') await loadAdminSug();
   render();
 }
 function tplItemName(id) { for (const s of S.adminTpl || []) { const t = (s.template_items || []).find(t => t.id === id); if (t) return t.nome; } return ''; }
@@ -1303,6 +1368,8 @@ function viewAdmin() {
     body = viewAdminUsers();
   } else if (t === 'metricas') {
     body = viewMetricas();
+  } else if (t === 'sugestoes') {
+    body = viewAdminSug();
   } else {
     const c = S.clicks || { links: {}, banners: {} };
     const cp = S.compras || {};
@@ -1314,7 +1381,7 @@ function viewAdmin() {
       <div class="card" style="gap:0;padding:4px 14px"><b style="padding:10px 0">Banners</b>${bn.map(x => `<div class="item"><span class="nm">${esc(x.nome)}</span><b>${x.n}</b></div>`).join('') || '<p class="small mut">Sem banners.</p>'}</div>`;
   }
   return `<div class="row"><button class="icon-btn" id="adback" aria-label="Voltar">${back}</button><h1 style="font-size:30px">Admin</h1></div>
-    <div class="tabs">${[['metricas', 'Métricas'], ['ofertas', 'Ofertas'], ['cupons', 'Cupons'], ['parceiros', 'Banners'], ['preparadores', 'Preparad.'], ['usuarios', 'Usuários'], ['cliques', 'Cliques']].map(x => `<button class="${t === x[0] ? 'on' : ''}" data-atab="${x[0]}">${x[1]}</button>`).join('')}</div>
+    <div class="tabs">${[['metricas', 'Métricas'], ['sugestoes', 'Sugestões' + (S.sugNovas ? ' (' + S.sugNovas + ')' : '')], ['ofertas', 'Ofertas'], ['cupons', 'Cupons'], ['parceiros', 'Banners'], ['preparadores', 'Preparad.'], ['usuarios', 'Usuários'], ['cliques', 'Cliques']].map(x => `<button class="${t === x[0] ? 'on' : ''}" data-atab="${x[0]}">${x[1]}</button>`).join('')}</div>
     ${body}`;
 }
 async function loadMetricas() {
@@ -2262,8 +2329,8 @@ function chartAcum() {
 function render() {
   const v = S.view; S._bn = 0;
   $app.innerHTML = v === 'login' ? viewLogin() : v === 'newpass' ? viewNewPass() : v === 'garage' ? viewGarage() : v === 'wizard' ? viewWizard() : v === 'project' ? viewProject() : v === 'expense' ? viewForm()
-    : v === 'dyno' ? viewDyno() : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : v === 'share' ? viewShare() : v === 'publico' ? viewPublico() : '<div class="center mut">Carregando…</div>';
-  $app.insertAdjacentHTML('beforeend', `<footer class="ver">prep-pro.app é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
+    : v === 'dyno' ? viewDyno() : v === 'completar' ? viewCompletar() : v === 'perfil' ? viewPerfil() : v === 'planos' ? viewPlanos() : v === 'cupons' ? viewCupons() : v === 'acupom' ? viewCupomForm() : v === 'admin' ? viewAdmin() : v === 'feedback' ? viewFeedback() : v === 'aoffer' ? viewOfferForm() : v === 'abanner' ? viewBannerForm() : v === 'share' ? viewShare() : v === 'publico' ? viewPublico() : '<div class="center mut">Carregando…</div>';
+  $app.insertAdjacentHTML('beforeend', `<footer class="ver">${v !== 'feedback' && v !== 'loading' ? '<button class="link" id="fbabrir" style="font-size:13px;margin-bottom:10px">💬 Enviar sugestão ou erro</button><br>' : ''}prep-pro.app é uma ferramenta da 16X Consultoria Ltda.<br>© ${new Date().getFullYear()} · Todos os direitos reservados · versão ${APP_VERSION}</footer>`);
   if (S.sheet) $app.insertAdjacentHTML('beforeend', viewSheet());
   if (S.modal) $app.insertAdjacentHTML('beforeend', viewModal());
 }
@@ -2294,7 +2361,7 @@ $app.addEventListener('click', async ev => {
   if (ds.capafor) { ev.stopPropagation(); return escolherCapa(ds.capafor); }
   if (ds.offers) return openOffers(ds.offers);
   if (ds.banner) return openBanner(ds.banner);
-  if (id === 'admin') return openAdmin('ofertas');
+  if (id === 'admin') return openAdmin(S.sugNovas ? 'sugestoes' : 'metricas');
   if (id === 'perfil') return openPerfil();
   if (id === 'google') return loginGoogle();
   if (ds.dyno) return openDyno(ds.dyno);
@@ -2326,6 +2393,9 @@ $app.addEventListener('click', async ev => {
   if (ds.pickprep) return pickPrep(ds.pickprep);
   if (ds.adest) return adminDestaque(ds.adest, false);
   if (ds.adestx) return adminDestaque(ds.adestx, true);
+  if (ds.fbtipo) { const m = document.getElementById('fbmsg'); S.fb.msg = m ? m.value : S.fb.msg; S.fb.tipo = ds.fbtipo; return render(); }
+  if (ds.asugf) { S.aSugF = ds.asugf; return render(); }
+  if (ds.asug) return salvarSug(+ds.asug, ds.asugst);
   if (ds.mdias) { S.mDias = +ds.mdias; S.metr = null; render(); await loadMetricas(); return render(); }
   if (ds.aver) return adminFlag(ds.aver, 'verificado');
   if (ds.ablq) return adminFlag(ds.ablq, 'bloqueado');
@@ -2378,6 +2448,9 @@ $app.addEventListener('click', async ev => {
   if (id === 'w2') { keepWiz(); return createProject(); }
   if (id === 'pback') return loadGarage();
   if (id === 'share') return openShare();
+  if (id === 'fbabrir') return openFeedback();
+  if (id === 'fbvoltar') return voltarDoFeedback();
+  if (id === 'fbenviar') return enviarFeedback();
   if (id === 'shback') { S.view = 'project'; render(); return; }
   if (id === 'shwa') return shareWa();
   if (id === 'shnative') return shareNative();
